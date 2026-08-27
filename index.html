@@ -73,10 +73,21 @@
 
   <!-- ============================ HERO ============================ -->
   <section class="hero">
+    <!-- Backdrop. Three soft radial fields and a fading grid, all decorative
+         and all animated on transform only. aria-hidden: there is nothing here
+         to read. -->
+    <div class="hero-aurora" aria-hidden="true">
+      <span class="aurora-blob blob-a"></span>
+      <span class="aurora-blob blob-b"></span>
+      <span class="aurora-blob blob-c"></span>
+    </div>
+    <div class="hero-mesh" aria-hidden="true"></div>
+
     <div class="shell hero-grid">
       <div class="hero-copy">
         <p class="eyebrow">Chrome extension · learn.vcs.net</p>
-        <h1>Your homework is buried in lesson plans. CoursePilot reads them and tells you what's due.</h1>
+        <h1>Your homework is buried in lesson plans.
+          <span class="h1-accent">CoursePilot reads them and tells you what's due.</span></h1>
         <p class="lede">
           Our teachers don't use Moodle's calendar — it's empty. They write homework as
           prose inside lesson plans: <em>"Unit 1A Test Thursday 8/27,"</em> halfway down a page
@@ -103,7 +114,8 @@
           <em>"what's due this week?"</em>
         </figcaption>
 
-        <div class="browser">
+        <div class="browser-stage">
+        <div class="browser" id="browser-mock">
           <div class="browser-chrome" aria-hidden="true">
             <span class="dot"></span><span class="dot"></span><span class="dot"></span>
             <span class="browser-url">learn.vcs.net &nbsp;·&nbsp; demo, sample data</span>
@@ -118,6 +130,7 @@
             src="demo.html"
             width="820" height="620"
             title="CoursePilot live demo — the assistant running on sample data"></iframe>
+        </div>
         </div>
 
         <p class="demo-fallback">
@@ -265,12 +278,17 @@
             <path class="d-arrow" d="M404 150 H 436" marker-end="url(#cp-arrow)"/>
             <text class="d-edge" x="406" y="139">shows</text>
 
+            <!-- Pulses: the box lights up as the packet arrives in it. -->
+            <rect class="d-pulse d-pulse-2" x="232" y="86" width="164" height="128" rx="12"/>
+
             <!-- 3. the student -->
             <rect class="d-box" x="444" y="98" width="152" height="104" rx="12"/>
             <text class="d-box-title" x="462" y="128">You</text>
             <text class="d-box-sub" x="462" y="152">The chat window,</text>
             <text class="d-box-sub" x="462" y="170">on your screen,</text>
             <text class="d-box-sub" x="462" y="188">and nowhere else</text>
+
+            <rect class="d-pulse d-pulse-3" x="444" y="98" width="152" height="104" rx="12"/>
 
             <!-- what is kept, and where -->
             <rect class="d-note" x="32" y="252" width="262" height="130" rx="12"/>
@@ -303,6 +321,16 @@
             <text class="d-box-title d-opt-title" x="730" y="334">Google Gemini</text>
             <text class="d-box-sub" x="730" y="356">Optional, off by default.</text>
             <text class="d-box-sub" x="730" y="374">Gets the question you typed.</text>
+
+            <!-- The travelling packet. Two hops inside the tab, then the two
+                 attempts to leave: one runs into the wall, the other stops at a
+                 gate that is shut. Nothing ever reaches the far side. -->
+            <g class="d-flow" aria-hidden="true">
+              <circle class="d-dot d-dot-read"  cx="186" cy="150" r="5"/>
+              <circle class="d-dot d-dot-show"  cx="398" cy="150" r="5"/>
+              <circle class="d-dot d-dot-block" cx="430" cy="262" r="5"/>
+              <circle class="d-dot d-dot-gate"  cx="430" cy="348" r="5"/>
+            </g>
 
             <defs>
               <marker id="cp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -349,10 +377,14 @@
             <path class="d-arrow" d="M190 294 V 318" marker-end="url(#cp-arrow-t)"/>
             <text class="d-edge" x="202" y="313">shows</text>
 
+            <rect class="d-pulse d-pulse-t2" x="26" y="190" width="328" height="104" rx="12"/>
+
             <rect class="d-box" x="26" y="326" width="328" height="86" rx="12"/>
             <text class="d-box-title" x="44" y="354">You</text>
             <text class="d-box-sub" x="44" y="376">The chat window, on your screen,</text>
             <text class="d-box-sub" x="44" y="394">and nowhere else</text>
+
+            <rect class="d-pulse d-pulse-t3" x="26" y="326" width="328" height="86" rx="12"/>
 
             <rect class="d-note" x="26" y="424" width="328" height="76" rx="12"/>
             <text class="d-note-title" x="44" y="450">Stored on this device only</text>
@@ -381,6 +413,11 @@
             <text class="d-box-sub" x="214" y="616">Optional, off by</text>
             <text class="d-box-sub" x="214" y="634">default. Gets the</text>
             <text class="d-box-sub" x="214" y="652">question you typed.</text>
+
+            <g class="d-flow d-flow-tall" aria-hidden="true">
+              <circle class="d-dot d-dot-read-t" cx="190" cy="160" r="5"/>
+              <circle class="d-dot d-dot-show-t" cx="190" cy="296" r="5"/>
+            </g>
 
             <defs>
               <marker id="cp-arrow-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -531,7 +568,8 @@
   </section>
 
   <!-- ======================== BUILT BY A STUDENT ======================== -->
-  <section id="who" class="section section-alt" aria-labelledby="who-title">
+  <section id="who" class="section section-alt section-who" aria-labelledby="who-title">
+    <div class="who-aurora" aria-hidden="true"><span class="aurora-blob blob-d"></span></div>
     <div class="shell shell-narrow">
       <p class="eyebrow">Who built this</p>
       <h2 id="who-title">A student at the school it runs on</h2>
@@ -546,6 +584,13 @@
         how people actually type. None of that is in any general-purpose tool — a company building
         for a thousand schools would never learn it.
       </p>
+      <ul class="knows" aria-label="Things CoursePilot knows about this specific school">
+        <li class="reveal"><span class="knows-k">Lesson plans</span><span class="knows-v">live on tab 2 of every course</span></li>
+        <li class="reveal"><span class="knows-k">Mandarin III</span><span class="knows-v">meets on B days</span></li>
+        <li class="reveal"><span class="knows-k">"chem"</span><span class="knows-v">means Chemistry Honors</span></li>
+        <li class="reveal"><span class="knows-k">The calendar</span><span class="knows-v">is empty, so don't trust it</span></li>
+      </ul>
+
       <p class="who-body">
         It's a first draft, and I'd rather have it in front of people and be told what's wrong with
         it than polish it alone for another month.

@@ -1,8 +1,9 @@
 /**
  * main.js — the only script on the site.
  *
- * Two jobs: the light/dark toggle, and the scroll reveal. No dependencies, no
- * network calls, nothing stored except the visitor's own theme choice.
+ * The theme toggle, the demo frame's self-heal, the scroll reveal, and the
+ * pointer tilt on the browser mock. No dependencies, no network calls, nothing
+ * stored except the visitor's own theme choice.
  */
 (function () {
   'use strict';
@@ -116,6 +117,73 @@
       new ResizeObserver(check).observe(frame);
     }
     [200, 600, 1500, 3000, 6000].forEach(function (ms) { window.setTimeout(check, ms); });
+  }
+
+  /* ------------------------------------------------------------- 3D tilt */
+
+  /**
+   * Tilt the browser mock toward the pointer, so it reads as an object sitting
+   * in the page rather than a screenshot pasted onto it.
+   *
+   * Three rules keep it from getting in the way:
+   *   - it flattens the moment the pointer is over the frame, or anything
+   *     inside it takes focus, so nobody ever clicks a skewed control;
+   *   - it does nothing on touch or when the pointer is coarse, which covers
+   *     the school iPads, where the compositor work would not be repaid;
+   *   - it does nothing at all under prefers-reduced-motion.
+   * Writes two custom properties and lets CSS do the transform, so the only
+   * thing that ever changes is one composited property.
+   */
+  var mock = document.getElementById('browser-mock');
+  var hero = document.querySelector('.hero');
+  var fine = window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  var noMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (mock && hero && fine && !noMotion) {
+    var MAX = 5;           // degrees; past about 6 it stops being subtle
+    var queued = false;
+    var px = 0, py = 0;
+
+    var apply = function () {
+      queued = false;
+      var box = hero.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      // -1 .. 1 from the centre of the hero
+      var nx = ((px - box.left) / box.width - 0.5) * 2;
+      var ny = ((py - box.top) / box.height - 0.5) * 2;
+      nx = nx < -1 ? -1 : nx > 1 ? 1 : nx;
+      ny = ny < -1 ? -1 : ny > 1 ? 1 : ny;
+      mock.style.setProperty('--tilt-x', (-ny * MAX + 1.4).toFixed(2) + 'deg');
+      mock.style.setProperty('--tilt-y', (nx * MAX - 2.5).toFixed(2) + 'deg');
+    };
+
+    var onPointer = function (e) {
+      px = e.clientX;
+      py = e.clientY;
+      if (queued) return;
+      queued = true;
+      if (window.requestAnimationFrame) window.requestAnimationFrame(apply);
+      else window.setTimeout(apply, 32);
+    };
+
+    hero.addEventListener('pointermove', onPointer, { passive: true });
+
+    // Back to rest when the pointer leaves the hero entirely.
+    hero.addEventListener('pointerleave', function () {
+      mock.style.removeProperty('--tilt-x');
+      mock.style.removeProperty('--tilt-y');
+    });
+
+    // Flat while it is being used.
+    var flatten = function () { mock.classList.add('is-flat'); };
+    var unflatten = function () {
+      if (mock.contains(document.activeElement)) return;
+      mock.classList.remove('is-flat');
+    };
+    mock.addEventListener('pointerenter', flatten);
+    mock.addEventListener('pointerleave', unflatten);
+    mock.addEventListener('focusin', flatten);
+    mock.addEventListener('focusout', unflatten);
   }
 
   /* --------------------------------------------------------------- reveal */

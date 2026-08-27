@@ -63,6 +63,33 @@ starts looking wrong.
 If the extension ever measures its viewport lazily — or renames that storage
 key — revisit both.
 
+## Where the motion is, and why it stops where it does
+
+The hero, the four how-it-works steps, and the who-built-it section carry the
+visual weight: an animated backdrop, a 3D tilt on the demo frame, cards that
+lift on hover, display type. **Privacy and limits are deliberately flat.** A
+pitch that gets quiet and factual the moment it starts talking about data reads
+as confidence; animating the trust section would read as a sales page. If you
+add flourish later, add it above the privacy section, not inside it.
+
+The one exception is the data-flow diagram, which is animated because the
+motion *is* the argument — a packet crosses to the extension, reaches the
+student, and then visibly stops at the boundary. Both exits stop: one at the
+wall, one at a gate that is shut until the student opens it.
+
+Constraints that any new effect has to keep:
+
+- **`prefers-reduced-motion: reduce` disables all of it**, including the 3D
+  transform and the diagram animation. The block at the bottom of `styles.css`
+  is the single place that happens; add to it in the same commit.
+- **Transform and opacity only.** Nothing that animates layout, and no filters.
+- **Contrast is measured against the animated backdrop at its brightest point**,
+  not against the flat page colour. That is why `--accent-ink` is darker than
+  `--accent` in light mode and why the light backdrop fields are so faint: at
+  their old strength they pushed body copy under 4.5:1 where they overlapped.
+  Re-measure the worst-case overlap before raising any of those alphas.
+- **Four requests, all local.** No fonts, no CDNs, no images.
+
 ## Running it locally
 
 Open `index.html` in a browser. That's it — but use a local server if the

@@ -22,6 +22,7 @@
   --border: #dbe3ef;
   --border-strong: #c3d0e2;
   --ui-edge: #6f8199;        /* boundaries that must clear 3:1 as UI */
+  --mesh-line: rgba(22, 50, 92, .07);  /* decorative hero grid */
 
   /* ink */
   --text: #0f1a29;
@@ -31,11 +32,13 @@
   --brand: #16325c;          /* header + deep fills, identical in both themes */
   --brand-2: #24508f;
   --accent: #0b8ed4;         /* fills, rules, dots — never small text */
-  --accent-ink: #0b6fb8;     /* accent used AS text; must clear 4.5:1 */
+  --accent-ink: #0a62a4;     /* accent used AS text; must clear 4.5:1 even
+                                over the hero backdrop, so it is darker than
+                                --accent rather than a shade of it */
   --on-brand: #ffffff;
   --on-brand-muted: #c5d6ef; /* nav links on the navy bar */
 
-  --focus: #0b6fb8;
+  --focus: #0a62a4;
   --shadow-1: 0 1px 2px rgba(15, 26, 41, .06), 0 2px 8px rgba(15, 26, 41, .05);
   --shadow-2: 0 8px 24px rgba(15, 26, 41, .10), 0 2px 6px rgba(15, 26, 41, .06);
   --shadow-3: 0 24px 60px rgba(15, 26, 41, .16), 0 4px 12px rgba(15, 26, 41, .08);
@@ -53,7 +56,8 @@
     --surface-2: #1d2839;
     --border: #2b3849;
     --border-strong: #3b4a5f;
-    --ui-edge: #6b7f9b;
+    --ui-edge: #8697b0;
+    --mesh-line: rgba(140, 190, 240, .07);
 
     --text: #e9f0f9;
     --muted: #a2b4ca;
@@ -78,7 +82,8 @@
   --surface-2: #1d2839;
   --border: #2b3849;
   --border-strong: #3b4a5f;
-  --ui-edge: #6b7f9b;
+  --ui-edge: #8697b0;
+  --mesh-line: rgba(140, 190, 240, .07);
 
   --text: #e9f0f9;
   --muted: #a2b4ca;
@@ -347,7 +352,7 @@ code {
 @media (min-width: 1080px) {
   .hero-grid {
     display: grid;
-    grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
     gap: 40px;
     align-items: start;
   }
@@ -567,10 +572,7 @@ code {
 .step {
   display: flex;
   gap: 18px;
-  padding: 22px 0;
-  border-top: 1px solid var(--border);
 }
-.step:first-child { border-top: 0; padding-top: 6px; }
 .step-num {
   flex: 0 0 auto;
   width: 34px; height: 34px;
@@ -704,7 +706,7 @@ code {
 .fact-optin {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-ink);
   border-radius: var(--radius-sm);
   padding: 20px;
   margin: 6px 0;
@@ -728,7 +730,7 @@ code {
 }
 .limits h3 { font-size: 17.5px; margin-bottom: 7px; }
 .limits p { color: var(--muted); max-width: 66ch; }
-.limits-key { border-left-color: var(--accent); }
+.limits-key { border-left-color: var(--accent-ink); }
 
 /* ---- who ---- */
 
@@ -779,7 +781,7 @@ code {
   margin-top: 22px;
   font-size: 15px;
   color: var(--muted);
-  border-left: 3px solid var(--accent);
+  border-left: 3px solid var(--accent-ink);
   padding-left: 14px;
   max-width: 62ch;
 }
@@ -809,6 +811,428 @@ code {
 }
 .footer-links a:hover { color: #ffffff; text-decoration-color: #ffffff; }
 
+/* ==========================================================================
+   Depth and motion
+
+   Where the flash goes is a decision, not a default. The hero, the four steps
+   and the who-built-it section carry it; privacy and limits stay flat and
+   quiet, because a pitch that calms down when it starts talking about data
+   reads as confidence and an animated trust section reads as a sales page.
+
+   The one exception is the data-flow diagram, which is animated precisely
+   because the motion *is* the argument: the packet moves, reaches the wall,
+   and stops. Everything here animates transform and opacity only.
+   ========================================================================== */
+
+/* ---- hero backdrop: three slow radial fields and a fading grid ---------- */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.hero-aurora,
+.who-aurora {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.aurora-blob {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+/* Alpha is kept low on purpose: these sit behind body copy, and the measured
+   contrast has to survive the worst point of the gradient. */
+.blob-a {
+  width: 46vw; height: 46vw;
+  min-width: 420px; min-height: 420px;
+  left: -10%; top: -34%;
+  /* A lift, not a tint: white can only raise the luminance behind dark
+     text, so this field can never cost contrast. */
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .92), rgba(255, 255, 255, 0) 66%);
+  animation: drift-a 30s ease-in-out infinite;
+}
+.blob-b {
+  width: 40vw; height: 40vw;
+  min-width: 380px; min-height: 380px;
+  right: -12%; top: -22%;
+  background: radial-gradient(circle at 50% 50%, rgba(11, 142, 212, .09), rgba(11, 142, 212, 0) 66%);
+  animation: drift-b 38s ease-in-out infinite;
+}
+.blob-c {
+  width: 34vw; height: 34vw;
+  min-width: 320px; min-height: 320px;
+  left: 34%; bottom: -30%;
+  background: radial-gradient(circle at 50% 50%, rgba(36, 80, 143, .06), rgba(36, 80, 143, 0) 70%);
+  animation: drift-c 34s ease-in-out infinite;
+}
+.blob-d {
+  width: 52vw; height: 52vw;
+  min-width: 440px; min-height: 440px;
+  right: -14%; top: -40%;
+  background: radial-gradient(circle at 50% 50%, rgba(11, 142, 212, .10), rgba(11, 142, 212, 0) 68%);
+  animation: drift-b 42s ease-in-out infinite;
+}
+
+:root[data-theme="dark"] .blob-a,
+:root[data-theme="dark"] .blob-d { background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, .17), rgba(56, 189, 248, 0) 68%); }
+:root[data-theme="dark"] .blob-b { background: radial-gradient(circle at 50% 50%, rgba(37, 83, 154, .30), rgba(37, 83, 154, 0) 66%); }
+:root[data-theme="dark"] .blob-c { background: radial-gradient(circle at 50% 50%, rgba(11, 111, 184, .20), rgba(11, 111, 184, 0) 70%); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .blob-a,
+  :root:not([data-theme="light"]) .blob-d { background: radial-gradient(circle at 50% 50%, rgba(56, 189, 248, .17), rgba(56, 189, 248, 0) 68%); }
+  :root:not([data-theme="light"]) .blob-b { background: radial-gradient(circle at 50% 50%, rgba(37, 83, 154, .30), rgba(37, 83, 154, 0) 66%); }
+  :root:not([data-theme="light"]) .blob-c { background: radial-gradient(circle at 50% 50%, rgba(11, 111, 184, .20), rgba(11, 111, 184, 0) 70%); }
+}
+
+@keyframes drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(6%, 8%, 0) scale(1.10); }
+}
+@keyframes drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.05); }
+  50%      { transform: translate3d(-7%, 6%, 0) scale(1); }
+}
+@keyframes drift-c {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50%      { transform: translate3d(5%, -7%, 0) scale(1.12); }
+}
+
+/* A faint engineering grid, faded out at the edges so it never reads as a
+   border. Static — one more moving thing here would be noise. */
+.hero-mesh {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, var(--mesh-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--mesh-line) 1px, transparent 1px);
+  background-size: 68px 68px;
+  -webkit-mask-image: radial-gradient(ellipse 78% 62% at 28% 34%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 78% 62% at 28% 34%, #000 0%, transparent 72%);
+}
+
+/* ---- hero type ---------------------------------------------------------- */
+
+.hero h1 {
+  font-size: clamp(35px, 7.6vw, 56px);
+  font-weight: 800;
+  line-height: 1.04;
+  letter-spacing: -0.034em;
+  max-width: 16ch;
+  margin-bottom: 22px;
+  text-wrap: balance;
+}
+
+/* Beside the demo the copy column is around 500px, so the display size has to
+   come down or the headline runs to six lines of three words. */
+@media (min-width: 1080px) {
+  .hero h1 { font-size: clamp(32px, 3.5vw, 45px); max-width: 15ch; }
+}
+
+/* Both ends of this gradient are measured against the hero background, so
+   every point along it clears 4.5:1. The solid colour is declared first and
+   survives if background-clip is unsupported. */
+.h1-accent {
+  color: var(--accent-ink);
+  background-image: linear-gradient(96deg, var(--brand) 2%, var(--brand-2) 46%, var(--accent-ink) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+:root[data-theme="dark"] .h1-accent {
+  color: var(--accent-ink);
+  background-image: linear-gradient(96deg, #cfe4fb 2%, var(--accent-ink) 46%, var(--accent) 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .h1-accent {
+    background-image: linear-gradient(96deg, #cfe4fb 2%, var(--accent-ink) 46%, var(--accent) 100%);
+  }
+}
+
+/* ---- buttons with a bit of life ---------------------------------------- */
+
+.button-primary {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+}
+.button-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 34%, rgba(255, 255, 255, .22) 50%, transparent 66%);
+  transform: translateX(-120%);
+  transition: transform .6s cubic-bezier(.2, .7, .3, 1);
+}
+.button-primary:hover::after,
+.button-primary:focus-visible::after { transform: translateX(120%); }
+.button-primary:hover { transform: translateY(-2px); }
+.button-quiet:hover { transform: translateY(-2px); }
+
+/* ---- the browser mock, as an object rather than a screenshot ------------ */
+
+.browser-stage { perspective: 1500px; }
+
+.browser {
+  /* JS feeds --tilt-x / --tilt-y from the pointer; these are the resting
+     values, so the object still reads as tilted with no JS and on touch. */
+  transform:
+    rotateX(var(--tilt-x, 3.2deg))
+    rotateY(var(--tilt-y, -6.5deg))
+    translateZ(0);
+  transform-origin: 50% 60%;
+  transition: transform .55s cubic-bezier(.2, .7, .3, 1), box-shadow .55s ease;
+  will-change: transform;
+}
+
+/* Flat whenever anyone is actually using it — pointer inside, or something
+   in there has keyboard focus. An interactive surface should not be skewed
+   under the hand that is using it. */
+.browser.is-flat {
+  --tilt-x: 0deg;
+  --tilt-y: 0deg;
+  box-shadow: var(--shadow-3);
+}
+
+/* No tilt on touch: nothing to hover with, and iPads have better things to
+   spend a compositor pass on. */
+@media (hover: none), (pointer: coarse) {
+  .browser { transform: none; }
+}
+
+/* ---- how it works: real cards on a rail -------------------------------- */
+
+/* The numbers move out of the cards and sit on a spine in the gutter, so the
+   four steps read as one run rather than four unrelated boxes. */
+.steps { position: relative; padding-left: 46px; }
+
+/* A pseudo-element, not a span: only <li> is valid inside an <ol>, and this
+   also keeps :nth-child on the steps counting from one. */
+.steps::before {
+  content: "";
+  position: absolute;
+  left: 16px;
+  top: 24px;
+  bottom: 24px;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(to bottom, transparent, var(--accent) 10%, var(--accent) 90%, transparent);
+  opacity: .34;
+}
+
+.step {
+  position: relative;
+  display: block;
+  padding: 20px 22px;
+  margin-bottom: 14px;
+  border-top: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  transition: transform .35s cubic-bezier(.2, .7, .3, 1), box-shadow .35s ease, border-color .35s ease;
+  will-change: transform;
+}
+.step:first-child { padding-top: 20px; }
+.step:hover {
+  transform: translateY(-5px) rotate(-.45deg);
+  box-shadow: var(--shadow-3);
+  border-color: var(--accent);
+}
+.step:nth-child(odd):hover { transform: translateY(-5px) rotate(.45deg); }
+
+.step-num {
+  position: absolute;
+  left: -46px;
+  top: 20px;
+  background: linear-gradient(140deg, var(--brand-2), var(--brand));
+  box-shadow: 0 4px 12px rgba(11, 111, 184, .32);
+  transition: transform .35s cubic-bezier(.2, .7, .3, 1);
+}
+.step:hover .step-num { transform: scale(1.14) rotate(-7deg); }
+
+/* Below this the gutter costs more than the spine is worth, so the number
+   goes back inside the card. */
+@media (max-width: 620px) {
+  .steps { padding-left: 0; }
+  .steps::before { display: none; }
+  .step { display: flex; gap: 16px; align-items: flex-start; }
+  .step-num { position: static; }
+}
+
+/* ---- who built it ------------------------------------------------------ */
+
+.section-who { position: relative; isolation: isolate; overflow: hidden; }
+
+.knows {
+  list-style: none;
+  margin: 26px 0 28px;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.knows li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 15px 17px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-ink);
+  background: var(--surface);
+  box-shadow: var(--shadow-1);
+  transition: transform .35s cubic-bezier(.2, .7, .3, 1), box-shadow .35s ease;
+  will-change: transform;
+}
+.knows li:hover {
+  transform: translateY(-4px) scale(1.015);
+  box-shadow: var(--shadow-2);
+}
+.knows-k { font-weight: 700; font-size: 15.5px; color: var(--text); }
+.knows-v { font-size: 15px; color: var(--muted); }
+
+/* ---- install cards lift, quietly --------------------------------------- */
+
+.install li {
+  transition: transform .35s cubic-bezier(.2, .7, .3, 1), box-shadow .35s ease;
+}
+.install li:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
+
+/* ==========================================================================
+   The data-flow animation
+
+   One 7s cycle, shared by every element: each keyframe set covers the whole
+   cycle and is simply invisible outside its own window, so nothing can drift
+   out of sync the way animation-delay does. A packet crosses to the
+   extension, the extension lights up, it crosses to the student — and then
+   the two attempts to leave arrive at the boundary and stop. That last beat
+   is the entire point of the section.
+
+   Only transform and opacity move.
+   ========================================================================== */
+
+.d-dot { fill: var(--accent); }
+.d-pulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2.4;
+  opacity: 0;
+}
+
+.d-dot, .d-pulse, .d-block, .d-gate { will-change: transform, opacity; }
+
+.diagram-wide .d-dot-read  { animation: dot-read 7s linear infinite; }
+.diagram-wide .d-dot-show  { animation: dot-show 7s linear infinite; }
+.diagram-wide .d-dot-block { animation: dot-block 7s linear infinite; }
+.diagram-wide .d-dot-gate  { animation: dot-gate 7s linear infinite; }
+.diagram-wide .d-pulse-2   { animation: pulse-2 7s linear infinite; }
+.diagram-wide .d-pulse-3   { animation: pulse-3 7s linear infinite; }
+.diagram-wide .d-block     { animation: impact-block 7s linear infinite; }
+.diagram-wide .d-gate      { animation: impact-gate 7s linear infinite; }
+
+/* Portrait has no clear corridor for a travelling exit dot — it would have to
+   cross the storage box — so there the wall marks carry the impact alone. */
+.diagram-tall .d-dot-read-t { animation: dot-read-t 7s linear infinite; }
+.diagram-tall .d-dot-show-t { animation: dot-show-t 7s linear infinite; }
+.diagram-tall .d-pulse-t2   { animation: pulse-2 7s linear infinite; }
+.diagram-tall .d-pulse-t3   { animation: pulse-3 7s linear infinite; }
+.diagram-tall .d-block      { animation: impact-block-t 7s linear infinite; }
+.diagram-tall .d-gate       { animation: impact-gate-t 7s linear infinite; }
+
+@keyframes dot-read {
+  0%, 2%    { opacity: 0; transform: translateX(0); }
+  4%        { opacity: 1; transform: translateX(2px); }
+  15%       { opacity: 1; transform: translateX(44px); }
+  17%, 100% { opacity: 0; transform: translateX(44px); }
+}
+@keyframes dot-show {
+  0%, 23%   { opacity: 0; transform: translateX(0); }
+  25%       { opacity: 1; transform: translateX(2px); }
+  36%       { opacity: 1; transform: translateX(44px); }
+  38%, 100% { opacity: 0; transform: translateX(44px); }
+}
+@keyframes pulse-2 {
+  0%, 13%   { opacity: 0; }
+  17%       { opacity: .95; }
+  24%, 100% { opacity: 0; }
+}
+@keyframes pulse-3 {
+  0%, 34%   { opacity: 0; }
+  38%       { opacity: .95; }
+  45%, 100% { opacity: 0; }
+}
+
+/* The blocked crossing: out to the wall, a hard stop, a recoil, gone. */
+@keyframes dot-block {
+  0%, 49%   { opacity: 0; transform: translateX(0); }
+  51%       { opacity: 1; transform: translateX(2px); }
+  64%       { opacity: 1; transform: translateX(176px); }
+  66%       { transform: translateX(166px); }
+  68%       { transform: translateX(173px); }
+  70%       { opacity: 1; transform: translateX(169px); }
+  75%, 100% { opacity: 0; transform: translateX(169px); }
+}
+/* The optional crossing: same journey, stopped by a gate that is shut. */
+@keyframes dot-gate {
+  0%, 73%   { opacity: 0; transform: translateX(0); }
+  75%       { opacity: 1; transform: translateX(2px); }
+  88%       { opacity: 1; transform: translateX(168px); }
+  90%       { transform: translateX(160px); }
+  92%       { transform: translateX(166px); }
+  94%       { opacity: 1; transform: translateX(163px); }
+  98%, 100% { opacity: 0; transform: translateX(163px); }
+}
+@keyframes impact-block {
+  0%, 63%   { transform: scale(1); }
+  65%       { transform: scale(1.22); }
+  70%, 100% { transform: scale(1); }
+}
+@keyframes impact-gate {
+  0%, 87%   { transform: scale(1); }
+  89%       { transform: scale(1.28); }
+  94%, 100% { transform: scale(1); }
+}
+
+@keyframes dot-read-t {
+  0%, 2%    { opacity: 0; transform: translateY(0); }
+  4%        { opacity: 1; transform: translateY(1px); }
+  15%       { opacity: 1; transform: translateY(24px); }
+  17%, 100% { opacity: 0; transform: translateY(24px); }
+}
+@keyframes dot-show-t {
+  0%, 23%   { opacity: 0; transform: translateY(0); }
+  25%       { opacity: 1; transform: translateY(1px); }
+  36%       { opacity: 1; transform: translateY(24px); }
+  38%, 100% { opacity: 0; transform: translateY(24px); }
+}
+@keyframes impact-block-t {
+  0%, 55%   { transform: scale(1); }
+  58%       { transform: scale(1.22); }
+  64%, 100% { transform: scale(1); }
+}
+@keyframes impact-gate-t {
+  0%, 77%   { transform: scale(1); }
+  80%       { transform: scale(1.28); }
+  86%, 100% { transform: scale(1); }
+}
+
+/* Scaling an SVG shape needs its own box as the origin, or it flies off
+   toward the viewBox corner. */
+.d-block, .d-gate {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
 /* --------------------------------------------------------------------------
    Motion
 
@@ -833,4 +1257,27 @@ code {
   }
   .js .reveal { opacity: 1; transform: none; }
   .live-dot { animation: none; }
+
+  /* Everything added for flash, switched off. The tilt is reset through the
+     custom properties as well as the transform, so a stale pointer value can
+     never reintroduce it. */
+  .aurora-blob { animation: none; transform: none; }
+  .browser {
+    --tilt-x: 0deg;
+    --tilt-y: 0deg;
+    transform: none !important;
+  }
+  .step:hover,
+  .step:nth-child(odd):hover,
+  .knows li:hover,
+  .install li:hover,
+  .button-primary:hover,
+  .button-quiet:hover { transform: none; }
+  .step:hover .step-num { transform: none; }
+  .button-primary::after { display: none; }
+
+  /* The diagram animation is the one piece of motion that carries meaning, so
+     it is removed rather than frozen: the static drawing already says it. */
+  .d-dot, .d-pulse { display: none; }
+  .d-block, .d-gate { animation: none; transform: none; }
 }
