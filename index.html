@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CoursePilot — what's due, read from your teachers' lesson plans</title>
+<meta name="description" content="A Chrome extension that reads Moodle lesson plans on learn.vcs.net and tells you what's due, what's coming up, and what's late. Runs entirely in your browser.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2316325c'/><path d='M9 11h14M9 16h14M9 21h9' stroke='%230b8ed4' stroke-width='2.6' stroke-linecap='round'/></svg>">
+<script>
+  /* Runs before first paint: applies the saved theme so there is no flash, and
+     marks the document as scripted so scroll-reveal can start hidden. Without
+     JS every section is visible from the start — the reveal is decoration. */
+  (function () {
+    var el = document.documentElement;
+    el.classList.add('js');
+    try {
+      var saved = localStorage.getItem('coursepilot-site:theme');
+      if (saved === 'light' || saved === 'dark') el.setAttribute('data-theme', saved);
+
+      /* The demo iframe shares this origin, so it shares this localStorage. The
+         widget saves where its launcher sits the first time it mounts — and if
+         it ever mounts in a frame that has not been laid out yet, it saves a
+         position pinned to the wrong corner and restores it on every later
+         visit. Clearing the key here means the demo always opens in its default
+         corner. A visitor's demo preferences are not worth keeping; a demo that
+         silently looks broken forever is worth preventing.
+         (Key: see widget-prefs.js in the extension repo.) */
+      localStorage.removeItem('vcs-assistant:widget');
+    } catch (e) { /* private browsing: fall through to the OS preference */ }
+  })();
+</script>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="site-header">
+  <div class="bar">
+    <a class="wordmark" href="#main">
+      <span class="wordmark-mark" aria-hidden="true">
+        <svg viewBox="0 0 32 32" width="28" height="28" focusable="false"><rect width="32" height="32" rx="7" fill="#0f2647"/><path d="M9 11h14M9 16h14M9 21h9" stroke="#38bdf8" stroke-width="2.6" stroke-linecap="round"/></svg>
+      </span>
+      <span class="wordmark-text">CoursePilot</span>
+    </a>
+
+    <nav class="site-nav" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#limits">Limits</a>
+      <a href="#get">Install</a>
+    </nav>
+
+    <div class="bar-actions">
+      <button type="button" id="theme-toggle" class="icon-button" aria-pressed="false">
+        <span class="icon-button-glyph" aria-hidden="true">
+          <svg class="glyph-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" focusable="false"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></svg>
+          <svg class="glyph-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" focusable="false"><path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2Z"/></svg>
+        </span>
+        <span class="visually-hidden" id="theme-toggle-label">Switch to dark theme</span>
+      </button>
+
+      <span class="signin-wrap">
+        <button type="button" class="signin" disabled aria-describedby="signin-note">Sign in — coming soon</button>
+        <span class="signin-note" id="signin-note">There are no accounts. CoursePilot works without one.</span>
+      </span>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">Chrome extension · learn.vcs.net</p>
+        <h1>Your homework is buried in lesson plans. CoursePilot reads them and tells you what's due.</h1>
+        <p class="lede">
+          Our teachers don't use Moodle's calendar — it's empty. They write homework as
+          prose inside lesson plans: <em>"Unit 1A Test Thursday 8/27,"</em> halfway down a page
+          nobody scrolls. CoursePilot reads those pages, pulls out the assignments and dates,
+          and shows you the exact sentence it read them from.
+        </p>
+        <p class="lede lede-tight">
+          It runs entirely in your browser. It sees only what you can already see when you're
+          signed in, and it sends nothing anywhere.
+        </p>
+        <p class="hero-actions">
+          <a class="button button-primary" href="#demo">Try the demo</a>
+          <a class="button button-quiet" href="#privacy">What data does it touch?</a>
+        </p>
+      </div>
+
+      <!-- ---------------------- LIVE DEMO ---------------------- -->
+      <figure class="demo" id="demo">
+        <figcaption class="demo-caption">
+          <span class="live-dot" aria-hidden="true"></span>
+          <strong>Live demo.</strong> The real widget, running on sample data — no login, nothing real.
+          Open the chat button in the bottom-right corner of the frame and ask
+          <em>"what's due this week?"</em>
+        </figcaption>
+
+        <div class="browser">
+          <div class="browser-chrome" aria-hidden="true">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="browser-url">learn.vcs.net &nbsp;·&nbsp; demo, sample data</span>
+          </div>
+          <!-- width/height are deliberate: the widget inside measures its
+               viewport the moment it mounts and remembers the answer, so the
+               frame must have a real box from the very first layout. main.js
+               checks afterwards that it landed correctly, and reloads the frame
+               once if it did not. -->
+          <iframe
+            class="browser-view"
+            src="demo.html"
+            width="820" height="620"
+            title="CoursePilot live demo — the assistant running on sample data"></iframe>
+        </div>
+
+        <p class="demo-fallback">
+          Frame not loading? <a href="demo.html">Open the demo in its own tab</a>.
+        </p>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ==================== THE IT ANSWER, UP FRONT ==================== -->
+  <section class="strip" aria-labelledby="strip-title">
+    <div class="shell">
+      <h2 class="strip-title" id="strip-title">If you're deciding whether to allow this, here's the short version</h2>
+      <ul class="strip-grid">
+        <li class="reveal">
+          <h3>It never leaves the browser</h3>
+          <p>No servers, no API calls, no analytics, no third parties. There is nowhere for the data to go, because the extension never sends any.</p>
+        </li>
+        <li class="reveal">
+          <h3>It sees only what the student sees</h3>
+          <p>It reads the same signed-in course pages the student is already looking at, using the session already in their browser. It cannot reach anything they can't.</p>
+        </li>
+        <li class="reveal">
+          <h3>No account, nothing stored remotely</h3>
+          <p>There's no sign-up and no database. The only thing saved is display preferences, in that browser, on that device.</p>
+        </li>
+      </ul>
+      <p class="strip-more"><a href="#privacy">The longer version, with a diagram →</a></p>
+    </div>
+  </section>
+
+  <!-- ========================= HOW IT WORKS ========================= -->
+  <section id="how" class="section" aria-labelledby="how-title">
+    <div class="shell shell-narrow">
+      <p class="eyebrow">How it works</p>
+      <h2 id="how-title">Four steps, none of them clever</h2>
+
+      <ol class="steps">
+        <li class="step reveal">
+          <span class="step-num" aria-hidden="true">1</span>
+          <div class="step-body">
+            <h3>It reads your lesson plans</h3>
+            <p>
+              Teachers publish homework as prose inside Moodle Book activities — the lesson
+              plan for the day. CoursePilot opens the same pages you'd open yourself and reads
+              the text on them.
+            </p>
+          </div>
+        </li>
+        <li class="step reveal">
+          <span class="step-num" aria-hidden="true">2</span>
+          <div class="step-body">
+            <h3>It finds the assignments and the dates</h3>
+            <p>
+              A sentence like <em>"Unit 1A Test Thursday 8/27"</em> becomes a dated item attached to a
+              specific course. It resolves the ordinary ways teachers write dates — weekday names,
+              "next Friday," a bare 8/27 — into a real day on the calendar.
+            </p>
+          </div>
+        </li>
+        <li class="step reveal">
+          <span class="step-num" aria-hidden="true">3</span>
+          <div class="step-body">
+            <h3>It shows you the sentence it read</h3>
+            <p>
+              Every item carries the wording it came from and a link back to the page. If the
+              extension is wrong, you can see <em>why</em> in one glance instead of trusting it.
+              This is the whole reason the thing is usable.
+            </p>
+          </div>
+        </li>
+        <li class="step reveal">
+          <span class="step-num" aria-hidden="true">4</span>
+          <div class="step-body">
+            <h3>It answers the three questions</h3>
+            <p>
+              What's due, what's coming up, and what's late — sorted, colour-coded, and grouped
+              by course. That's the whole product.
+            </p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- =========================== PRIVACY =========================== -->
+  <section id="privacy" class="section section-alt" aria-labelledby="privacy-title">
+    <div class="shell">
+      <div class="section-head shell-narrow">
+        <p class="eyebrow">Privacy &amp; data handling</p>
+        <h2 id="privacy-title">Where the data goes: nowhere</h2>
+        <p class="section-lede">
+          CoursePilot is a content script. It runs inside the tab, on pages the student has
+          already loaded and authenticated. Everything below the dashed line in this diagram
+          happens on the student's own machine, and nothing crosses it.
+        </p>
+      </div>
+
+      <figure class="diagram-figure">
+        <div class="diagram-wrap">
+          <svg class="diagram diagram-wide" viewBox="0 0 900 400" role="img" aria-labelledby="diagram-title diagram-desc">
+            <title id="diagram-title">Data-flow diagram: all processing happens inside the browser</title>
+            <desc id="diagram-desc">
+              Inside a boundary labelled "the student's browser," three boxes connect left to
+              right: the signed-in Moodle page at learn.vcs.net, then CoursePilot reading and
+              parsing it, then the answer displayed on screen. A separate box outside the
+              boundary, labelled "any server, anywhere," is unreachable — the arrow toward it is
+              blocked where it would cross the boundary.
+            </desc>
+
+            <!-- the browser boundary: nothing crosses this -->
+            <rect class="d-boundary" x="14" y="46" width="700" height="326" rx="18"/>
+            <text class="d-boundary-label" x="38" y="78">The student's browser — one tab, one device</text>
+
+            <!-- 1. the Moodle page -->
+            <rect class="d-box" x="38" y="108" width="168" height="120" rx="12"/>
+            <text class="d-box-title" x="58" y="142">learn.vcs.net</text>
+            <text class="d-box-sub" x="58" y="168">Course pages and</text>
+            <text class="d-box-sub" x="58" y="188">lesson plans, already</text>
+            <text class="d-box-sub" x="58" y="208">open and signed in</text>
+
+            <path class="d-arrow" d="M214 168 H 252" marker-end="url(#cp-arrow)"/>
+            <text class="d-edge" x="216" y="156">reads</text>
+
+            <!-- 2. the extension -->
+            <rect class="d-box d-box-accent" x="266" y="94" width="176" height="148" rx="12"/>
+            <text class="d-box-title" x="286" y="128">CoursePilot</text>
+            <text class="d-box-sub" x="286" y="154">Finds assignments,</text>
+            <text class="d-box-sub" x="286" y="174">resolves dates, keeps</text>
+            <text class="d-box-sub" x="286" y="194">the source sentence</text>
+            <text class="d-box-sub" x="286" y="214">— all in page memory</text>
+
+            <path class="d-arrow" d="M450 168 H 488" marker-end="url(#cp-arrow)"/>
+            <text class="d-edge" x="452" y="156">shows</text>
+
+            <!-- 3. the student -->
+            <rect class="d-box" x="502" y="108" width="168" height="120" rx="12"/>
+            <text class="d-box-title" x="522" y="142">You</text>
+            <text class="d-box-sub" x="522" y="168">The chat window,</text>
+            <text class="d-box-sub" x="522" y="188">on your screen,</text>
+            <text class="d-box-sub" x="522" y="208">and nowhere else</text>
+
+            <!-- what is kept, and where -->
+            <rect class="d-note" x="38" y="272" width="404" height="76" rx="12"/>
+            <text class="d-note-title" x="58" y="300">Stored on the device only</text>
+            <text class="d-box-sub" x="58" y="324">Theme, widget position, and which day a class</text>
+            <text class="d-box-sub" x="58" y="342">meets — browser storage, like any site preference.</text>
+
+            <!-- the crossing that never happens -->
+            <path class="d-arrow-dead" d="M678 168 H 748"/>
+            <g class="d-block">
+              <line x1="702" y1="150" x2="726" y2="186"/>
+              <line x1="726" y1="150" x2="702" y2="186"/>
+            </g>
+            <!-- a plate so the label is not read through the boundary line -->
+            <rect class="d-label-plate" x="678" y="196" width="72" height="42" rx="7"/>
+            <text class="d-edge d-edge-dead" x="714" y="214" text-anchor="middle">nothing</text>
+            <text class="d-edge d-edge-dead" x="714" y="230" text-anchor="middle">crosses</text>
+
+            <!-- 4. the server that does not exist -->
+            <rect class="d-box d-box-ghost" x="752" y="108" width="134" height="120" rx="12"/>
+            <text class="d-box-title d-ghost-text" x="770" y="142">Any server,</text>
+            <text class="d-box-title d-ghost-text" x="770" y="164">anywhere</text>
+            <text class="d-box-sub d-ghost-text" x="770" y="190">No requests are</text>
+            <text class="d-box-sub d-ghost-text" x="770" y="210">made. None.</text>
+
+            <defs>
+              <marker id="cp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="d-arrowhead" d="M0 0 L10 5 L0 10 z"/>
+              </marker>
+            </defs>
+          </svg>
+
+          <!-- Same picture, stacked, for narrow screens. A diagram that has to
+               be scrolled sideways is a diagram whose point ("nothing crosses")
+               is off the edge of the phone, which defeats the whole section. -->
+          <svg class="diagram diagram-tall" viewBox="0 0 380 660" role="img" aria-labelledby="diagram-t-title diagram-t-desc">
+            <title id="diagram-t-title">Data-flow diagram: all processing happens inside the browser</title>
+            <desc id="diagram-t-desc">
+              Inside a boundary labelled "the student's browser," three boxes stack top to
+              bottom: the signed-in Moodle page at learn.vcs.net, then CoursePilot reading and
+              parsing it, then the answer displayed on screen. A separate box below the
+              boundary, labelled "any server, anywhere," is unreachable — the arrow toward it is
+              blocked where it would cross the boundary.
+            </desc>
+
+            <rect class="d-boundary" x="8" y="30" width="364" height="486" rx="18"/>
+            <text class="d-boundary-label d-boundary-label-sm" x="26" y="54">The student's browser — one tab, one device</text>
+
+            <rect class="d-box" x="26" y="72" width="328" height="86" rx="12"/>
+            <text class="d-box-title" x="44" y="100">learn.vcs.net</text>
+            <text class="d-box-sub" x="44" y="122">Course pages and lesson plans,</text>
+            <text class="d-box-sub" x="44" y="140">already open and signed in</text>
+
+            <path class="d-arrow" d="M190 158 V 182" marker-end="url(#cp-arrow-t)"/>
+            <text class="d-edge" x="202" y="177">reads</text>
+
+            <rect class="d-box d-box-accent" x="26" y="190" width="328" height="104" rx="12"/>
+            <text class="d-box-title" x="44" y="218">CoursePilot</text>
+            <text class="d-box-sub" x="44" y="240">Finds assignments, resolves dates,</text>
+            <text class="d-box-sub" x="44" y="258">keeps the source sentence</text>
+            <text class="d-box-sub" x="44" y="276">— all in page memory</text>
+
+            <path class="d-arrow" d="M190 294 V 318" marker-end="url(#cp-arrow-t)"/>
+            <text class="d-edge" x="202" y="313">shows</text>
+
+            <rect class="d-box" x="26" y="326" width="328" height="86" rx="12"/>
+            <text class="d-box-title" x="44" y="354">You</text>
+            <text class="d-box-sub" x="44" y="376">The chat window, on your screen,</text>
+            <text class="d-box-sub" x="44" y="394">and nowhere else</text>
+
+            <rect class="d-note" x="26" y="424" width="328" height="76" rx="12"/>
+            <text class="d-note-title" x="44" y="450">Stored on the device only</text>
+            <text class="d-box-sub" x="44" y="472">Theme, widget position, and which day a</text>
+            <text class="d-box-sub" x="44" y="490">class meets — browser storage only.</text>
+
+            <path class="d-arrow-dead" d="M190 516 V 556"/>
+            <g class="d-block">
+              <line x1="176" y1="520" x2="204" y2="548"/>
+              <line x1="204" y1="520" x2="176" y2="548"/>
+            </g>
+            <rect class="d-label-plate" x="208" y="514" width="70" height="40" rx="7"/>
+            <text class="d-edge d-edge-dead" x="216" y="530">nothing</text>
+            <text class="d-edge d-edge-dead" x="216" y="546">crosses</text>
+
+            <rect class="d-box d-box-ghost" x="26" y="566" width="328" height="76" rx="12"/>
+            <text class="d-box-title d-ghost-text" x="44" y="594">Any server, anywhere</text>
+            <text class="d-box-sub d-ghost-text" x="44" y="616">No requests are made. None.</text>
+
+            <defs>
+              <marker id="cp-arrow-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="d-arrowhead" d="M0 0 L10 5 L0 10 z"/>
+              </marker>
+            </defs>
+          </svg>
+        </div>
+        <figcaption>The dashed boundary is the tab. There is no code path out of it.</figcaption>
+      </figure>
+
+      <div class="facts shell-narrow">
+        <dl class="fact-list">
+          <div class="fact reveal">
+            <dt>What it can access</dt>
+            <dd>
+              Pages on <code>learn.vcs.net</code> that the signed-in student can already open:
+              their course list, their course pages, the lesson-plan books inside them, and the
+              school-wide calendar. It uses the student's existing browser session — the same one
+              the tab is already using — and requests nothing beyond it.
+            </dd>
+          </div>
+          <div class="fact reveal">
+            <dt>What it sends</dt>
+            <dd>
+              Nothing. There is no backend, no analytics endpoint, no error reporting, no
+              third-party script. Content is read into memory in the tab and discarded when the
+              tab closes.
+            </dd>
+          </div>
+          <div class="fact reveal">
+            <dt>What it stores</dt>
+            <dd>
+              Display preferences only, in the browser's own storage on that device: light or dark
+              theme, where the student dragged the widget, whether they hid it, and which rotation
+              day each class meets on. No coursework, no names, no credentials — and nothing that
+              is readable from another device.
+            </dd>
+          </div>
+          <div class="fact reveal">
+            <dt>Who can see a student's work</dt>
+            <dd>
+              Only that student, in that browser. There is no shared account, no roster, no
+              teacher view, and no administrator dashboard — because there is no server for any of
+              those to live on.
+            </dd>
+          </div>
+          <div class="fact reveal">
+            <dt>If you want to verify it</dt>
+            <dd>
+              The extension is a few thousand lines of plain JavaScript with no dependencies and no
+              build step, and the demo on this page is that same code with sample data swapped in.
+              Open your browser's network tab while you use it — you'll see the extension make no
+              requests of its own. I'm happy to walk anyone at the school through the source.
+            </dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== WHAT IT CAN'T DO ======================== -->
+  <section id="limits" class="section" aria-labelledby="limits-title">
+    <div class="shell shell-narrow">
+      <p class="eyebrow">Honest limits</p>
+      <h2 id="limits-title">What it can't do</h2>
+      <p class="section-lede">
+        A tool that reads teachers' prose is going to be wrong sometimes. Here's exactly where,
+        so nobody finds out the hard way.
+      </p>
+
+      <ul class="limits">
+        <li class="reveal">
+          <h3>It can't see grades, and it doesn't touch PowerSchool</h3>
+          <p>
+            It reads course content on Moodle. Grades, GPA, attendance, and anything in
+            PowerSchool are outside it entirely — different system, no connection to it at all.
+          </p>
+        </li>
+        <li class="reveal">
+          <h3>Only school-wide events — not sports or clubs</h3>
+          <p>
+            It reads the school calendar that everyone gets. Game schedules, practice times, club
+            meetings, and anything that lives in a group chat aren't in it, so it won't tell you
+            about them.
+          </p>
+        </li>
+        <li class="reveal">
+          <h3>A class with no lesson plans is invisible to it</h3>
+          <p>
+            If a teacher doesn't post plans on Moodle, there is nothing to read, and CoursePilot
+            will say nothing about that class. It won't guess, and it won't quietly leave the gap
+            unmentioned.
+          </p>
+        </li>
+        <li class="reveal limits-key">
+          <h3>Every date is only as good as the sentence the teacher wrote</h3>
+          <p>
+            If the plan says Thursday and the test moves to Friday in class, CoursePilot still says
+            Thursday. It doesn't know what was announced out loud, and it can't tell a firm date
+            from a maybe. That's exactly why it always shows you the sentence it read — so you're
+            checking a teacher's words, not trusting a program's guess.
+          </p>
+        </li>
+        <li class="reveal">
+          <h3>It's a student project, not a supported product</h3>
+          <p>
+            One person maintains it, on one school's Moodle. It isn't a replacement for reading
+            your syllabus, and it should never be the only place a due date lives.
+          </p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ======================== BUILT BY A STUDENT ======================== -->
+  <section id="who" class="section section-alt" aria-labelledby="who-title">
+    <div class="shell shell-narrow">
+      <p class="eyebrow">Who built this</p>
+      <h2 id="who-title">A student at the school it runs on</h2>
+      <p class="who-body">
+        I'm a high-school student at VCS, and I built CoursePilot because I was opening eight
+        courses every night to find out what was due.
+      </p>
+      <p class="who-body">
+        It knows lesson plans live on tab 2 of every course here. It knows my Mandarin class meets
+        on B days, and that the rotation is the one thing Moodle can't tell you, so it asks. It
+        knows that "chem," "chemistry," and "Chemistry Honors" are the same class, because that's
+        how people actually type. None of that is in any general-purpose tool — a company building
+        for a thousand schools would never learn it.
+      </p>
+      <p class="who-body">
+        It's a first draft, and I'd rather have it in front of people and be told what's wrong with
+        it than polish it alone for another month.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============================= GET IT ============================= -->
+  <section id="get" class="section" aria-labelledby="get-title">
+    <div class="shell shell-narrow">
+      <p class="eyebrow">Install</p>
+      <h2 id="get-title">Getting it running</h2>
+      <p class="section-lede">
+        CoursePilot is <strong>not on the Chrome Web Store</strong>. It's loaded manually, in
+        developer mode, the way unreleased extensions are — which also means Chrome will show you a
+        banner about it, and that banner is correct.
+      </p>
+
+      <ol class="install">
+        <li class="reveal">
+          <h3>Download the extension folder</h3>
+          <!-- TODO: point this at the real extension repo once it's public. -->
+          <p>Grab the CoursePilot extension repo and unzip it somewhere you won't delete by accident.</p>
+        </li>
+        <li class="reveal">
+          <h3>Open Chrome's extensions page</h3>
+          <p>Go to <code>chrome://extensions</code> and turn on <strong>Developer mode</strong>, top right.</p>
+        </li>
+        <li class="reveal">
+          <h3>Load unpacked</h3>
+          <p>Click <strong>Load unpacked</strong> and choose the folder you unzipped.</p>
+        </li>
+        <li class="reveal">
+          <h3>Open learn.vcs.net</h3>
+          <p>
+            Sign in as usual. The chat button appears in the bottom-right corner. It only ever runs
+            on that one site — every other tab is untouched.
+          </p>
+        </li>
+      </ol>
+
+      <p class="install-note">
+        School iPads can't install Chrome extensions, so CoursePilot doesn't run there. The demo at
+        the top of this page does, though — that's just a web page.
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="shell shell-narrow">
+    <p class="footer-brand">CoursePilot</p>
+    <p>
+      A student project for learn.vcs.net. Runs in the browser, sends nothing anywhere, and shows
+      you the sentence it read every date from.
+    </p>
+    <p class="footer-links">
+      <a href="#privacy">Privacy</a>
+      <a href="#limits">Limits</a>
+      <a href="demo.html">Demo</a>
+    </p>
+  </div>
+</footer>
+
+<script src="main.js"></script>
+</body>
+</html>

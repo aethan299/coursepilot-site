@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Nothing here is built or installed — there is no toolchain — but keep these
+# out in case someone runs a local server or scratch script in the folder.
+node_modules/
+.cache/
+*.log
+.env
+.env.*
