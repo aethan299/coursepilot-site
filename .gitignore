@@ -8,9 +8,10 @@
 Thumbs.db
 Desktop.ini
 
-# Editors
+# Editors and local tooling
 .vscode/
 .idea/
+.claude/
 *.swp
 *~
 

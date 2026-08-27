@@ -81,10 +81,21 @@ is at the root, so pushing publishes.
 
 ## Notes for whoever picks this up
 
-- There is no analytics, no tracking, and no network call of any kind on this
-  page. Keep it that way — the site's whole argument is that the extension
-  doesn't phone home, and a tracker on the marketing page would undercut it.
+- There is no analytics, no tracking, and no network call of any kind on **this
+  page** — it loads four local files and nothing else. Keep it that way. The
+  site argues that the extension is honest about where data goes, and a tracker
+  on the marketing page would undercut that on the spot.
+- **The privacy copy has to stay true to the extension.** It states that
+  coursework is read and parsed locally, that there is no CoursePilot server or
+  account, and that one optional feature — off by default, requiring the
+  student's own Google API key — sends the typed question to
+  `generativelanguage.googleapis.com`. If that feature changes, is removed, or
+  gains a second endpoint, update `index.html` in the same commit: the hero
+  lede, the fourth card in the IT strip, the "What it sends" and "The one
+  exception, in full" rows, the diagram (both the wide and the tall SVG), and
+  the footer. School IT will read the manifest; the page must not be a surprise.
 - The "Sign in — coming soon" button is a deliberately disabled placeholder.
   There is no authentication anywhere in this project.
-- The install section links to the extension repo. That link is a `TODO` in
-  `index.html` until the repo is public.
+- The install section deliberately does **not** link to the extension repo,
+  because that repo is private while this site is public. It tells people to ask
+  for the folder instead. Add a link only once the repo is actually public.

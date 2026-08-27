@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CoursePilot — what's due, read from your teachers' lesson plans</title>
-<meta name="description" content="A Chrome extension that reads Moodle lesson plans on learn.vcs.net and tells you what's due, what's coming up, and what's late. Runs entirely in your browser.">
+<meta name="description" content="A Chrome extension that reads Moodle lesson plans on learn.vcs.net and tells you what's due, what's coming up, and what's late. Your coursework is read and understood on your own machine. No CoursePilot server, no account.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%2316325c'/><path d='M9 11h14M9 16h14M9 21h9' stroke='%230b8ed4' stroke-width='2.6' stroke-linecap='round'/></svg>">
@@ -84,8 +84,9 @@
           and shows you the exact sentence it read them from.
         </p>
         <p class="lede lede-tight">
-          It runs entirely in your browser. It sees only what you can already see when you're
-          signed in, and it sends nothing anywhere.
+          Your coursework is read and worked out on your own machine. There is no CoursePilot
+          server and no account. One optional feature is the exception — it's off until you turn
+          it on, and it's the first thing the privacy section tells you about.
         </p>
         <p class="hero-actions">
           <a class="button button-primary" href="#demo">Try the demo</a>
@@ -132,16 +133,25 @@
       <h2 class="strip-title" id="strip-title">If you're deciding whether to allow this, here's the short version</h2>
       <ul class="strip-grid">
         <li class="reveal">
-          <h3>It never leaves the browser</h3>
-          <p>No servers, no API calls, no analytics, no third parties. There is nowhere for the data to go, because the extension never sends any.</p>
+          <h3>Coursework is read and parsed on the device</h3>
+          <p>Course pages, assignments, and dates are pulled apart in the tab and discarded when it closes. None of it is uploaded anywhere.</p>
         </li>
         <li class="reveal">
           <h3>It sees only what the student sees</h3>
           <p>It reads the same signed-in course pages the student is already looking at, using the session already in their browser. It cannot reach anything they can't.</p>
         </li>
         <li class="reveal">
-          <h3>No account, nothing stored remotely</h3>
-          <p>There's no sign-up and no database. The only thing saved is display preferences, in that browser, on that device.</p>
+          <h3>No CoursePilot server, no account, no analytics</h3>
+          <p>There is nothing to sign up for and no database. Preferences are saved in that browser, on that device, and nowhere else.</p>
+        </li>
+        <li class="reveal strip-optin">
+          <h3>One optional feature, off by default</h3>
+          <p>
+            A student can add <strong>their own</strong> Google Gemini API key. With a key, a
+            question the rule engine can't classify is sent to Google to interpret — which is why
+            <code>generativelanguage.googleapis.com</code> is in the manifest. No key, no requests.
+            Assignments and dates always come from the teacher's page, never from the model.
+          </p>
         </li>
       </ul>
       <p class="strip-more"><a href="#privacy">The longer version, with a diagram →</a></p>
@@ -207,100 +217,116 @@
     <div class="shell">
       <div class="section-head shell-narrow">
         <p class="eyebrow">Privacy &amp; data handling</p>
-        <h2 id="privacy-title">Where the data goes: nowhere</h2>
+        <h2 id="privacy-title">Where the data goes, and the one place it can leave</h2>
         <p class="section-lede">
           CoursePilot is a content script. It runs inside the tab, on pages the student has
-          already loaded and authenticated. Everything below the dashed line in this diagram
-          happens on the student's own machine, and nothing crosses it.
+          already loaded and authenticated. Everything to do with their coursework happens inside
+          the dashed boundary below. Exactly one path leaves it, it is off until the student turns
+          it on, and it is drawn here rather than left for you to find.
         </p>
       </div>
 
       <figure class="diagram-figure">
         <div class="diagram-wrap">
-          <svg class="diagram diagram-wide" viewBox="0 0 900 400" role="img" aria-labelledby="diagram-title diagram-desc">
-            <title id="diagram-title">Data-flow diagram: all processing happens inside the browser</title>
+          <svg class="diagram diagram-wide" viewBox="0 0 960 440" role="img" aria-labelledby="diagram-title diagram-desc">
+            <title id="diagram-title">Where CoursePilot's data goes, including the one path that leaves the browser</title>
             <desc id="diagram-desc">
               Inside a boundary labelled "the student's browser," three boxes connect left to
-              right: the signed-in Moodle page at learn.vcs.net, then CoursePilot reading and
-              parsing it, then the answer displayed on screen. A separate box outside the
-              boundary, labelled "any server, anywhere," is unreachable — the arrow toward it is
-              blocked where it would cross the boundary.
+              right: the signed-in pages at learn.vcs.net, then CoursePilot finding assignments and
+              dates, then the answer on the student's screen. Preferences are stored on the device.
+              Two paths leave the boundary. The first is crossed out and leads to a box reading "no
+              CoursePilot server — there isn't one to contact." The second is dashed, gated, and
+              leads to "Google Gemini: optional, off by default," which receives only the question
+              the student typed, and only if the student has added their own API key.
             </desc>
 
-            <!-- the browser boundary: nothing crosses this -->
-            <rect class="d-boundary" x="14" y="46" width="700" height="326" rx="18"/>
-            <text class="d-boundary-label" x="38" y="78">The student's browser — one tab, one device</text>
+            <!-- the browser boundary -->
+            <rect class="d-boundary" x="12" y="40" width="600" height="376" rx="18"/>
+            <text class="d-boundary-label" x="34" y="72">The student's browser — one tab, one device</text>
 
             <!-- 1. the Moodle page -->
-            <rect class="d-box" x="38" y="108" width="168" height="120" rx="12"/>
-            <text class="d-box-title" x="58" y="142">learn.vcs.net</text>
-            <text class="d-box-sub" x="58" y="168">Course pages and</text>
-            <text class="d-box-sub" x="58" y="188">lesson plans, already</text>
-            <text class="d-box-sub" x="58" y="208">open and signed in</text>
+            <rect class="d-box" x="32" y="98" width="152" height="104" rx="12"/>
+            <text class="d-box-title" x="50" y="128">learn.vcs.net</text>
+            <text class="d-box-sub" x="50" y="152">Course pages and</text>
+            <text class="d-box-sub" x="50" y="170">lesson plans you</text>
+            <text class="d-box-sub" x="50" y="188">already opened</text>
 
-            <path class="d-arrow" d="M214 168 H 252" marker-end="url(#cp-arrow)"/>
-            <text class="d-edge" x="216" y="156">reads</text>
+            <path class="d-arrow" d="M192 150 H 224" marker-end="url(#cp-arrow)"/>
+            <text class="d-edge" x="194" y="139">reads</text>
 
             <!-- 2. the extension -->
-            <rect class="d-box d-box-accent" x="266" y="94" width="176" height="148" rx="12"/>
-            <text class="d-box-title" x="286" y="128">CoursePilot</text>
-            <text class="d-box-sub" x="286" y="154">Finds assignments,</text>
-            <text class="d-box-sub" x="286" y="174">resolves dates, keeps</text>
-            <text class="d-box-sub" x="286" y="194">the source sentence</text>
-            <text class="d-box-sub" x="286" y="214">— all in page memory</text>
+            <rect class="d-box d-box-accent" x="232" y="86" width="164" height="128" rx="12"/>
+            <text class="d-box-title" x="250" y="116">CoursePilot</text>
+            <text class="d-box-sub" x="250" y="140">Finds assignments,</text>
+            <text class="d-box-sub" x="250" y="158">resolves dates, keeps</text>
+            <text class="d-box-sub" x="250" y="176">the source sentence</text>
+            <text class="d-box-sub" x="250" y="194">— all in this tab</text>
 
-            <path class="d-arrow" d="M450 168 H 488" marker-end="url(#cp-arrow)"/>
-            <text class="d-edge" x="452" y="156">shows</text>
+            <path class="d-arrow" d="M404 150 H 436" marker-end="url(#cp-arrow)"/>
+            <text class="d-edge" x="406" y="139">shows</text>
 
             <!-- 3. the student -->
-            <rect class="d-box" x="502" y="108" width="168" height="120" rx="12"/>
-            <text class="d-box-title" x="522" y="142">You</text>
-            <text class="d-box-sub" x="522" y="168">The chat window,</text>
-            <text class="d-box-sub" x="522" y="188">on your screen,</text>
-            <text class="d-box-sub" x="522" y="208">and nowhere else</text>
+            <rect class="d-box" x="444" y="98" width="152" height="104" rx="12"/>
+            <text class="d-box-title" x="462" y="128">You</text>
+            <text class="d-box-sub" x="462" y="152">The chat window,</text>
+            <text class="d-box-sub" x="462" y="170">on your screen,</text>
+            <text class="d-box-sub" x="462" y="188">and nowhere else</text>
 
             <!-- what is kept, and where -->
-            <rect class="d-note" x="38" y="272" width="404" height="76" rx="12"/>
-            <text class="d-note-title" x="58" y="300">Stored on the device only</text>
-            <text class="d-box-sub" x="58" y="324">Theme, widget position, and which day a class</text>
-            <text class="d-box-sub" x="58" y="342">meets — browser storage, like any site preference.</text>
+            <rect class="d-note" x="32" y="252" width="262" height="130" rx="12"/>
+            <text class="d-note-title" x="50" y="280">Stored on this device only</text>
+            <text class="d-box-sub" x="50" y="304">Theme, widget position,</text>
+            <text class="d-box-sub" x="50" y="322">which day a class meets,</text>
+            <text class="d-box-sub" x="50" y="340">and your API key if you</text>
+            <text class="d-box-sub" x="50" y="358">chose to add one.</text>
 
-            <!-- the crossing that never happens -->
-            <path class="d-arrow-dead" d="M678 168 H 748"/>
+            <!-- crossing 1: the server that does not exist -->
+            <path class="d-arrow-dead" d="M340 214 V 262 H 700"/>
             <g class="d-block">
-              <line x1="702" y1="150" x2="726" y2="186"/>
-              <line x1="726" y1="150" x2="702" y2="186"/>
+              <line x1="600" y1="246" x2="624" y2="278"/>
+              <line x1="624" y1="246" x2="600" y2="278"/>
             </g>
-            <!-- a plate so the label is not read through the boundary line -->
-            <rect class="d-label-plate" x="678" y="196" width="72" height="42" rx="7"/>
-            <text class="d-edge d-edge-dead" x="714" y="214" text-anchor="middle">nothing</text>
-            <text class="d-edge d-edge-dead" x="714" y="230" text-anchor="middle">crosses</text>
+            <rect class="d-label-plate" x="424" y="234" width="132" height="24" rx="6"/>
+            <text class="d-edge d-edge-dead" x="432" y="251">no server exists</text>
 
-            <!-- 4. the server that does not exist -->
-            <rect class="d-box d-box-ghost" x="752" y="108" width="134" height="120" rx="12"/>
-            <text class="d-box-title d-ghost-text" x="770" y="142">Any server,</text>
-            <text class="d-box-title d-ghost-text" x="770" y="164">anywhere</text>
-            <text class="d-box-sub d-ghost-text" x="770" y="190">No requests are</text>
-            <text class="d-box-sub d-ghost-text" x="770" y="210">made. None.</text>
+            <rect class="d-box d-box-ghost" x="712" y="228" width="236" height="68" rx="12"/>
+            <text class="d-box-title d-ghost-text" x="730" y="258">No CoursePilot server</text>
+            <text class="d-box-sub d-ghost-text" x="730" y="280">There isn't one to contact.</text>
+
+            <!-- crossing 2: the optional, opt-in one -->
+            <path class="d-arrow-optional" d="M340 214 V 348 H 700" marker-end="url(#cp-arrow-opt)"/>
+            <rect class="d-label-plate" x="424" y="320" width="150" height="24" rx="6"/>
+            <text class="d-edge d-edge-opt" x="432" y="337">only with your key</text>
+            <circle class="d-gate" cx="612" cy="348" r="9"/>
+
+            <rect class="d-box d-box-optional" x="712" y="304" width="236" height="88" rx="12"/>
+            <text class="d-box-title d-opt-title" x="730" y="334">Google Gemini</text>
+            <text class="d-box-sub" x="730" y="356">Optional, off by default.</text>
+            <text class="d-box-sub" x="730" y="374">Gets the question you typed.</text>
 
             <defs>
               <marker id="cp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path class="d-arrowhead" d="M0 0 L10 5 L0 10 z"/>
               </marker>
+              <marker id="cp-arrow-opt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="d-arrowhead-opt" d="M0 0 L10 5 L0 10 z"/>
+              </marker>
             </defs>
           </svg>
 
           <!-- Same picture, stacked, for narrow screens. A diagram that has to
-               be scrolled sideways is a diagram whose point ("nothing crosses")
-               is off the edge of the phone, which defeats the whole section. -->
-          <svg class="diagram diagram-tall" viewBox="0 0 380 660" role="img" aria-labelledby="diagram-t-title diagram-t-desc">
-            <title id="diagram-t-title">Data-flow diagram: all processing happens inside the browser</title>
+               be scrolled sideways is a diagram whose point is off the edge of
+               the phone, which defeats the whole section. -->
+          <svg class="diagram diagram-tall" viewBox="0 0 380 700" role="img" aria-labelledby="diagram-t-title diagram-t-desc">
+            <title id="diagram-t-title">Where CoursePilot's data goes, including the one path that leaves the browser</title>
             <desc id="diagram-t-desc">
-              Inside a boundary labelled "the student's browser," three boxes stack top to
-              bottom: the signed-in Moodle page at learn.vcs.net, then CoursePilot reading and
-              parsing it, then the answer displayed on screen. A separate box below the
-              boundary, labelled "any server, anywhere," is unreachable — the arrow toward it is
-              blocked where it would cross the boundary.
+              Inside a boundary labelled "the student's browser," three boxes stack top to bottom:
+              the signed-in pages at learn.vcs.net, then CoursePilot finding assignments and dates,
+              then the answer on the student's screen. Preferences are stored on the device. Two
+              paths leave the boundary at the bottom. The first is crossed out and leads to a box
+              reading "no CoursePilot server — there isn't one to contact." The second is dashed,
+              gated, and leads to "Google Gemini: optional, off by default," which receives only
+              the question the student typed, and only if the student has added their own API key.
             </desc>
 
             <rect class="d-boundary" x="8" y="30" width="364" height="486" rx="18"/>
@@ -318,7 +344,7 @@
             <text class="d-box-title" x="44" y="218">CoursePilot</text>
             <text class="d-box-sub" x="44" y="240">Finds assignments, resolves dates,</text>
             <text class="d-box-sub" x="44" y="258">keeps the source sentence</text>
-            <text class="d-box-sub" x="44" y="276">— all in page memory</text>
+            <text class="d-box-sub" x="44" y="276">— all in this tab</text>
 
             <path class="d-arrow" d="M190 294 V 318" marker-end="url(#cp-arrow-t)"/>
             <text class="d-edge" x="202" y="313">shows</text>
@@ -329,31 +355,47 @@
             <text class="d-box-sub" x="44" y="394">and nowhere else</text>
 
             <rect class="d-note" x="26" y="424" width="328" height="76" rx="12"/>
-            <text class="d-note-title" x="44" y="450">Stored on the device only</text>
-            <text class="d-box-sub" x="44" y="472">Theme, widget position, and which day a</text>
-            <text class="d-box-sub" x="44" y="490">class meets — browser storage only.</text>
+            <text class="d-note-title" x="44" y="450">Stored on this device only</text>
+            <text class="d-box-sub" x="44" y="472">Theme, widget position, which day a class</text>
+            <text class="d-box-sub" x="44" y="490">meets, and your API key if you added one.</text>
 
-            <path class="d-arrow-dead" d="M190 516 V 556"/>
+            <!-- crossing 1: blocked, marked on the wall itself -->
+            <path class="d-arrow-dead" d="M108 500 V 556"/>
             <g class="d-block">
-              <line x1="176" y1="520" x2="204" y2="548"/>
-              <line x1="204" y1="520" x2="176" y2="548"/>
+              <line x1="96" y1="502" x2="120" y2="530"/>
+              <line x1="120" y1="502" x2="96" y2="530"/>
             </g>
-            <rect class="d-label-plate" x="208" y="514" width="70" height="40" rx="7"/>
-            <text class="d-edge d-edge-dead" x="216" y="530">nothing</text>
-            <text class="d-edge d-edge-dead" x="216" y="546">crosses</text>
 
-            <rect class="d-box d-box-ghost" x="26" y="566" width="328" height="76" rx="12"/>
-            <text class="d-box-title d-ghost-text" x="44" y="594">Any server, anywhere</text>
-            <text class="d-box-sub d-ghost-text" x="44" y="616">No requests are made. None.</text>
+            <!-- crossing 2: optional — a gate in the wall, shut by default -->
+            <path class="d-arrow-optional" d="M272 500 V 556" marker-end="url(#cp-arrow-opt-t)"/>
+            <circle class="d-gate" cx="272" cy="516" r="9"/>
+
+            <rect class="d-box d-box-ghost" x="8" y="564" width="176" height="112" rx="12"/>
+            <text class="d-box-title d-ghost-text" x="26" y="592">No CoursePilot</text>
+            <text class="d-box-title d-ghost-text" x="26" y="612">server</text>
+            <text class="d-box-sub d-ghost-text" x="26" y="638">There isn't one</text>
+            <text class="d-box-sub d-ghost-text" x="26" y="656">to contact.</text>
+
+            <rect class="d-box d-box-optional" x="196" y="564" width="176" height="112" rx="12"/>
+            <text class="d-box-title d-opt-title" x="214" y="592">Google Gemini</text>
+            <text class="d-box-sub" x="214" y="616">Optional, off by</text>
+            <text class="d-box-sub" x="214" y="634">default. Gets the</text>
+            <text class="d-box-sub" x="214" y="652">question you typed.</text>
 
             <defs>
               <marker id="cp-arrow-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
                 <path class="d-arrowhead" d="M0 0 L10 5 L0 10 z"/>
               </marker>
+              <marker id="cp-arrow-opt-t" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="d-arrowhead-opt" d="M0 0 L10 5 L0 10 z"/>
+              </marker>
             </defs>
           </svg>
         </div>
-        <figcaption>The dashed boundary is the tab. There is no code path out of it.</figcaption>
+        <figcaption>
+          Everything about your coursework happens inside the dashed boundary. Two paths leave it:
+          one leads nowhere, and the other is shut unless you open it yourself.
+        </figcaption>
       </figure>
 
       <div class="facts shell-narrow">
@@ -364,15 +406,38 @@
               Pages on <code>learn.vcs.net</code> that the signed-in student can already open:
               their course list, their course pages, the lesson-plan books inside them, and the
               school-wide calendar. It uses the student's existing browser session — the same one
-              the tab is already using — and requests nothing beyond it.
+              the tab is already using — and asks Moodle for nothing beyond that.
             </dd>
           </div>
           <div class="fact reveal">
             <dt>What it sends</dt>
             <dd>
-              Nothing. There is no backend, no analytics endpoint, no error reporting, no
-              third-party script. Content is read into memory in the tab and discarded when the
-              tab closes.
+              Out of the box, nothing. There is no CoursePilot backend to send anything to, no
+              analytics, no error reporting, and no third-party script. Course content is read
+              into memory in the tab and discarded when the tab closes.
+            </dd>
+          </div>
+          <div class="fact fact-optin reveal">
+            <dt>The one exception, in full</dt>
+            <dd>
+              <p>
+                CoursePilot has an optional Gemini layer. It is <strong>off by default</strong> and
+                does nothing at all unless a student pastes <strong>their own</strong> Google API
+                key into the extension's options page.
+              </p>
+              <p>
+                With a key present, a question the rule engine can't classify — the words the
+                student typed into the chat box — is sent to Google's API so the model can work out
+                what they meant. That is why
+                <code>generativelanguage.googleapis.com</code> appears in the extension's host
+                permissions, and you will find it there. With no key, that code path never runs and
+                the request is never made.
+              </p>
+              <p>
+                <strong>Assignments and dates always come from the teacher's page.</strong> The
+                model is used to understand the question, never to supply the answer — which is
+                also why every item still shows the sentence it was read from.
+              </p>
             </dd>
           </div>
           <div class="fact reveal">
@@ -395,10 +460,13 @@
           <div class="fact reveal">
             <dt>If you want to verify it</dt>
             <dd>
-              The extension is a few thousand lines of plain JavaScript with no dependencies and no
-              build step, and the demo on this page is that same code with sample data swapped in.
-              Open your browser's network tab while you use it — you'll see the extension make no
-              requests of its own. I'm happy to walk anyone at the school through the source.
+              The extension is plain JavaScript with no dependencies and no build step, and the
+              demo on this page is that same code with sample data swapped in. Read the manifest:
+              the host permissions are <code>learn.vcs.net</code> and
+              <code>generativelanguage.googleapis.com</code>, and the second one is there solely
+              for the optional feature above. Open your browser's network tab while you use it —
+              with no API key set, you will see it make no requests of its own. I'm happy to walk
+              anyone at the school through the source.
             </dd>
           </div>
         </dl>
@@ -446,7 +514,9 @@
             If the plan says Thursday and the test moves to Friday in class, CoursePilot still says
             Thursday. It doesn't know what was announced out loud, and it can't tell a firm date
             from a maybe. That's exactly why it always shows you the sentence it read — so you're
-            checking a teacher's words, not trusting a program's guess.
+            checking a teacher's words, not trusting a program's guess. This holds with the
+            optional Gemini layer switched on too: it helps work out what you asked, and it still
+            doesn't get a vote on when anything is due.
           </p>
         </li>
         <li class="reveal">
@@ -496,9 +566,11 @@
 
       <ol class="install">
         <li class="reveal">
-          <h3>Download the extension folder</h3>
-          <!-- TODO: point this at the real extension repo once it's public. -->
-          <p>Grab the CoursePilot extension repo and unzip it somewhere you won't delete by accident.</p>
+          <h3>Get the extension folder from me</h3>
+          <p>
+            The source repo is private for now, so there's nothing to link to yet — ask me and
+            I'll send you the folder. Unzip it somewhere you won't delete by accident.
+          </p>
         </li>
         <li class="reveal">
           <h3>Open Chrome's extensions page</h3>
@@ -521,6 +593,10 @@
         School iPads can't install Chrome extensions, so CoursePilot doesn't run there. The demo at
         the top of this page does, though — that's just a web page.
       </p>
+      <p class="install-note">
+        Nothing in the install asks for an API key. The Gemini feature described in
+        <a href="#privacy">the privacy section</a> stays off unless you go and add your own.
+      </p>
     </div>
   </section>
 
@@ -530,8 +606,9 @@
   <div class="shell shell-narrow">
     <p class="footer-brand">CoursePilot</p>
     <p>
-      A student project for learn.vcs.net. Runs in the browser, sends nothing anywhere, and shows
-      you the sentence it read every date from.
+      A student project for learn.vcs.net. Your coursework is read and worked out in your own
+      browser, there is no CoursePilot server and no account, and every date comes with the
+      sentence it was read from.
     </p>
     <p class="footer-links">
       <a href="#privacy">Privacy</a>
