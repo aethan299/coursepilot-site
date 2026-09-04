@@ -173,10 +173,12 @@
 
   <!-- ========================= HOW IT WORKS ========================= -->
   <section id="how" class="section" aria-labelledby="how-title">
-    <div class="shell shell-narrow">
+    <div class="shell">
       <p class="eyebrow">How it works</p>
       <h2 id="how-title">Four steps, none of them clever</h2>
 
+      <div class="how-grid">
+       <div class="how-steps">
       <ol class="steps">
         <li class="step reveal">
           <span class="step-num" aria-hidden="true">1</span>
@@ -222,11 +224,64 @@
           </div>
         </li>
       </ol>
+       </div>
+
+       <!-- ------------------- the looping chat illustration -------------------
+            Scripted, not live: every line here is something the extension
+            answers today, and the dates are relative on purpose so this can
+            never be mistaken for a feed of somebody's real coursework. The live
+            thing is the demo at the top of the page.
+
+            The stack is aria-hidden because it rewrites itself every second or
+            two and would be unusable noise to a screen reader; the description
+            below it carries the same information as static text.               -->
+       <div class="how-chat">
+         <figure class="chat" id="chat-demo">
+           <figcaption class="chat-caption">
+             <span class="chat-caption-dot" aria-hidden="true"></span>
+             An illustration, on sample data — <a href="#demo">the live one is at the top</a>.
+           </figcaption>
+
+           <div class="chat-window">
+             <div class="chat-window-bar" aria-hidden="true">
+               <span class="chat-window-title">CoursePilot</span>
+               <span class="chat-window-sub">learn.vcs.net</span>
+             </div>
+
+             <!-- Seeded with a static exchange: this is what visitors see with
+                  JavaScript off, and what stays put under reduced motion. -->
+             <div class="chat-stack" id="chat-stack" aria-hidden="true">
+               <div class="bubble bubble-q"><p>what's due this week</p></div>
+               <div class="bubble bubble-a">
+                 <p>You have 6 assignments coming up:</p>
+                 <span class="chat-card">
+                   <span class="chat-card-title">Unit 3 Problem Set</span>
+                   <span class="chat-card-meta"><span class="chat-card-course">Precalculus</span><span class="chat-card-due">due Friday</span></span>
+                 </span>
+                 <span class="chat-card">
+                   <span class="chat-card-title">Lab writeup — density</span>
+                   <span class="chat-card-meta"><span class="chat-card-course">Chemistry</span><span class="chat-card-due">due in 2 days</span></span>
+                 </span>
+               </div>
+             </div>
+           </div>
+
+           <p class="visually-hidden">
+             An illustration of the CoursePilot chat window on sample data. A student asks
+             "what's due this week" and CoursePilot answers "You have 6 assignments coming up",
+             listing a Precalculus problem set due Friday and a Chemistry lab writeup due in two
+             days. Other sample exchanges cover overdue work, tomorrow's lesson plan for
+             chemistry, what is due next class for statistics, and homework for calculus. The
+             working version is the live demo at the top of this page.
+           </p>
+         </figure>
+       </div>
+      </div>
     </div>
   </section>
 
   <!-- =========================== PRIVACY =========================== -->
-  <section id="privacy" class="section section-alt" aria-labelledby="privacy-title">
+  <section id="privacy" class="section section-alt section-motif" aria-labelledby="privacy-title">
     <div class="shell">
       <div class="section-head shell-narrow">
         <p class="eyebrow">Privacy &amp; data handling</p>
@@ -241,96 +296,143 @@
 
       <figure class="diagram-figure">
         <div class="diagram-wrap">
-          <svg class="diagram diagram-wide" viewBox="0 0 960 440" role="img" aria-labelledby="diagram-title diagram-desc">
+          <svg class="diagram diagram-wide" viewBox="0 0 1040 470" role="img" aria-labelledby="diagram-title diagram-desc">
             <title id="diagram-title">Where CoursePilot's data goes, including the one path that leaves the browser</title>
             <desc id="diagram-desc">
               Inside a boundary labelled "the student's browser," three boxes connect left to
               right: the signed-in pages at learn.vcs.net, then CoursePilot finding assignments and
               dates, then the answer on the student's screen. Preferences are stored on the device.
-              Two paths leave the boundary. The first is crossed out and leads to a box reading "no
-              CoursePilot server — there isn't one to contact." The second is dashed, gated, and
-              leads to "Google Gemini: optional, off by default," which receives only the question
-              the student typed, and only if the student has added their own API key.
+              Two paths reach the edge of the boundary. The first is crossed out and leads to a box
+              reading "no CoursePilot server — there isn't one to contact"; coursework reaching
+              that edge stays inside. The second is drawn as a gate that is shut by default and
+              leads to "Google Gemini: optional, off by default." It carries only the question the
+              student typed, and only once the student has added their own API key.
             </desc>
 
             <!-- the browser boundary -->
-            <rect class="d-boundary" x="12" y="40" width="600" height="376" rx="18"/>
-            <text class="d-boundary-label" x="34" y="72">The student's browser — one tab, one device</text>
+            <rect class="d-boundary" x="12" y="44" width="720" height="390" rx="18"/>
+            <!-- A second copy of the same rect, invisible until something is
+                 contained by it, so the wall itself can answer. -->
+            <rect class="d-boundary-pulse" x="12" y="44" width="720" height="390" rx="18"/>
+            <text class="d-boundary-label" x="34" y="76">The student's browser — one tab, one device</text>
+
+            <!-- ---------------------------------------------------------------
+                 The moving parts. Every token is labelled, because an anonymous
+                 dot says nothing the still picture does not already say.
+
+                 What each one is, and why that is the honest label:
+                   "your coursework"  moves from the page into the extension,
+                                      then to the edge, where it stays inside.
+                   "what's due"       is the answer, on your screen.
+                   "your question"    is the only thing that ever crosses, and
+                                      only after the gate is opened by hand.
+                 Nothing labelled coursework ever crosses either edge.
+                 --------------------------------------------------------------- -->
+            <g class="d-flow" aria-hidden="true">
+              <g class="d-token d-token-read" transform="translate(96 154)">
+                <rect class="d-token-box" x="0" y="-13" width="94" height="26" rx="13"/>
+                <text class="d-token-text" x="47" y="5" text-anchor="middle">your coursework</text>
+              </g>
+
+              <g class="d-token d-token-show" transform="translate(374 154)">
+                <rect class="d-token-box" x="0" y="-13" width="76" height="26" rx="13"/>
+                <text class="d-token-text" x="38" y="5" text-anchor="middle">what's due</text>
+              </g>
+
+              <g class="d-token d-token-held" transform="translate(400 286)">
+                <rect class="d-token-box" x="0" y="-13" width="94" height="26" rx="13"/>
+                <text class="d-token-text" x="47" y="5" text-anchor="middle">your coursework</text>
+              </g>
+
+              <g class="d-token d-token-sent" transform="translate(400 372)">
+                <rect class="d-token-box d-token-box-opt" x="0" y="-13" width="92" height="26" rx="13"/>
+                <text class="d-token-text d-token-text-opt" x="46" y="5" text-anchor="middle">your question</text>
+              </g>
+
+              <!-- The refusal: two rings breaking against the wall where the
+                   coursework is contained. -->
+              <g class="d-ripple">
+                <circle class="d-ripple-ring d-ripple-1" cx="732" cy="286" r="13"/>
+                <circle class="d-ripple-ring d-ripple-2" cx="732" cy="286" r="13"/>
+              </g>
+            </g>
+
 
             <!-- 1. the Moodle page -->
-            <rect class="d-box" x="32" y="98" width="152" height="104" rx="12"/>
-            <text class="d-box-title" x="50" y="128">learn.vcs.net</text>
-            <text class="d-box-sub" x="50" y="152">Course pages and</text>
-            <text class="d-box-sub" x="50" y="170">lesson plans you</text>
-            <text class="d-box-sub" x="50" y="188">already opened</text>
+            <rect class="d-box" x="32" y="100" width="152" height="108" rx="12"/>
+            <text class="d-box-title" x="50" y="130">learn.vcs.net</text>
+            <text class="d-box-sub" x="50" y="154">Course pages and</text>
+            <text class="d-box-sub" x="50" y="172">lesson plans you</text>
+            <text class="d-box-sub" x="50" y="190">already opened</text>
 
-            <path class="d-arrow" d="M192 150 H 224" marker-end="url(#cp-arrow)"/>
-            <text class="d-edge" x="194" y="139">reads</text>
+            <path class="d-arrow" d="M192 154 H 276" marker-end="url(#cp-arrow)"/>
+            <text class="d-edge" x="196" y="142">reads</text>
 
             <!-- 2. the extension -->
-            <rect class="d-box d-box-accent" x="232" y="86" width="164" height="128" rx="12"/>
-            <text class="d-box-title" x="250" y="116">CoursePilot</text>
-            <text class="d-box-sub" x="250" y="140">Finds assignments,</text>
-            <text class="d-box-sub" x="250" y="158">resolves dates, keeps</text>
-            <text class="d-box-sub" x="250" y="176">the source sentence</text>
-            <text class="d-box-sub" x="250" y="194">— all in this tab</text>
+            <rect class="d-box d-box-accent" x="284" y="88" width="164" height="132" rx="12"/>
+            <rect class="d-pulse d-pulse-2" x="284" y="88" width="164" height="132" rx="12"/>
+            <text class="d-box-title" x="302" y="118">CoursePilot</text>
+            <text class="d-box-sub" x="302" y="142">Finds assignments,</text>
+            <text class="d-box-sub" x="302" y="160">resolves dates, keeps</text>
+            <text class="d-box-sub" x="302" y="178">the source sentence</text>
+            <text class="d-box-sub" x="302" y="196">— all in this tab</text>
 
-            <path class="d-arrow" d="M404 150 H 436" marker-end="url(#cp-arrow)"/>
-            <text class="d-edge" x="406" y="139">shows</text>
-
-            <!-- Pulses: the box lights up as the packet arrives in it. -->
-            <rect class="d-pulse d-pulse-2" x="232" y="86" width="164" height="128" rx="12"/>
+            <path class="d-arrow" d="M456 154 H 540" marker-end="url(#cp-arrow)"/>
+            <text class="d-edge" x="460" y="142">shows</text>
 
             <!-- 3. the student -->
-            <rect class="d-box" x="444" y="98" width="152" height="104" rx="12"/>
-            <text class="d-box-title" x="462" y="128">You</text>
-            <text class="d-box-sub" x="462" y="152">The chat window,</text>
-            <text class="d-box-sub" x="462" y="170">on your screen,</text>
-            <text class="d-box-sub" x="462" y="188">and nowhere else</text>
-
-            <rect class="d-pulse d-pulse-3" x="444" y="98" width="152" height="104" rx="12"/>
+            <rect class="d-box" x="548" y="100" width="152" height="108" rx="12"/>
+            <rect class="d-pulse d-pulse-3" x="548" y="100" width="152" height="108" rx="12"/>
+            <text class="d-box-title" x="566" y="130">You</text>
+            <text class="d-box-sub" x="566" y="154">The chat window,</text>
+            <text class="d-box-sub" x="566" y="172">on your screen,</text>
+            <text class="d-box-sub" x="566" y="190">and nowhere else</text>
 
             <!-- what is kept, and where -->
-            <rect class="d-note" x="32" y="252" width="262" height="130" rx="12"/>
-            <text class="d-note-title" x="50" y="280">Stored on this device only</text>
-            <text class="d-box-sub" x="50" y="304">Theme, widget position,</text>
-            <text class="d-box-sub" x="50" y="322">which day a class meets,</text>
-            <text class="d-box-sub" x="50" y="340">and your API key if you</text>
-            <text class="d-box-sub" x="50" y="358">chose to add one.</text>
+            <rect class="d-note" x="32" y="262" width="270" height="134" rx="12"/>
+            <text class="d-note-title" x="50" y="290">Stored on this device only</text>
+            <text class="d-box-sub" x="50" y="314">Theme, widget position,</text>
+            <text class="d-box-sub" x="50" y="332">which day a class meets,</text>
+            <text class="d-box-sub" x="50" y="350">and your API key if you</text>
+            <text class="d-box-sub" x="50" y="368">chose to add one.</text>
 
-            <!-- crossing 1: the server that does not exist -->
-            <path class="d-arrow-dead" d="M340 214 V 262 H 700"/>
+            <!-- edge 1: there is no route out, because there is nothing there -->
+            <path class="d-arrow-dead" d="M366 220 V 286 H 800"/>
             <g class="d-block">
-              <line x1="600" y1="246" x2="624" y2="278"/>
-              <line x1="624" y1="246" x2="600" y2="278"/>
+              <line x1="720" y1="270" x2="744" y2="302"/>
+              <line x1="744" y1="270" x2="720" y2="302"/>
             </g>
-            <rect class="d-label-plate" x="424" y="234" width="132" height="24" rx="6"/>
-            <text class="d-edge d-edge-dead" x="432" y="251">no server exists</text>
+            <rect class="d-label-plate" x="470" y="244" width="126" height="24" rx="6"/>
+            <text class="d-edge d-edge-dead" x="478" y="261">no server exists</text>
 
-            <rect class="d-box d-box-ghost" x="712" y="228" width="236" height="68" rx="12"/>
-            <text class="d-box-title d-ghost-text" x="730" y="258">No CoursePilot server</text>
-            <text class="d-box-sub d-ghost-text" x="730" y="280">There isn't one to contact.</text>
+            <rect class="d-box d-box-ghost" x="812" y="252" width="216" height="70" rx="12"/>
+            <text class="d-box-title d-ghost-text" x="830" y="282">No CoursePilot server</text>
+            <text class="d-box-sub d-ghost-text" x="830" y="304">There isn't one to contact.</text>
 
-            <!-- crossing 2: the optional, opt-in one -->
-            <path class="d-arrow-optional" d="M340 214 V 348 H 700" marker-end="url(#cp-arrow-opt)"/>
-            <rect class="d-label-plate" x="424" y="320" width="150" height="24" rx="6"/>
-            <text class="d-edge d-edge-opt" x="432" y="337">only with your key</text>
-            <circle class="d-gate" cx="612" cy="348" r="9"/>
+            <!-- edge 2: a gate, shut unless the student opens it -->
+            <path class="d-arrow-optional" d="M366 220 V 372 H 800" marker-end="url(#cp-arrow-opt)"/>
+            <rect class="d-label-plate" x="470" y="330" width="140" height="24" rx="6"/>
+            <text class="d-edge d-edge-opt" x="478" y="347">only with your key</text>
 
-            <rect class="d-box d-box-optional" x="712" y="304" width="236" height="88" rx="12"/>
-            <text class="d-box-title d-opt-title" x="730" y="334">Google Gemini</text>
-            <text class="d-box-sub" x="730" y="356">Optional, off by default.</text>
-            <text class="d-box-sub" x="730" y="374">Gets the question you typed.</text>
-
-            <!-- The travelling packet. Two hops inside the tab, then the two
-                 attempts to leave: one runs into the wall, the other stops at a
-                 gate that is shut. Nothing ever reaches the far side. -->
-            <g class="d-flow" aria-hidden="true">
-              <circle class="d-dot d-dot-read"  cx="186" cy="150" r="5"/>
-              <circle class="d-dot d-dot-show"  cx="398" cy="150" r="5"/>
-              <circle class="d-dot d-dot-block" cx="430" cy="262" r="5"/>
-              <circle class="d-dot d-dot-gate"  cx="430" cy="348" r="5"/>
+            <!-- The gate itself: a shut plug on the boundary, with two bars that
+                 swing apart only while the student's key is present. -->
+            <g class="d-gate-group">
+              <circle class="d-gate" cx="732" cy="372" r="11"/>
+              <line class="d-gate-bar d-gate-bar-top" x1="732" y1="364" x2="732" y2="380"/>
+              <!-- The key only exists while the gate is open, and it says who
+                   opened it. Nothing crosses this edge without it. -->
+              <g class="d-gate-key">
+                <rect class="d-label-plate" x="656" y="304" width="152" height="22" rx="6"/>
+                <text class="d-edge d-edge-opt" x="732" y="320" text-anchor="middle">you switched this on</text>
+                <circle class="d-key-ring" cx="732" cy="342" r="7"/>
+                <line class="d-key-stem" x1="732" y1="349" x2="732" y2="357"/>
+              </g>
             </g>
+
+            <rect class="d-box d-box-optional" x="812" y="332" width="216" height="80" rx="12"/>
+            <text class="d-box-title d-opt-title" x="830" y="362">Google Gemini</text>
+            <text class="d-box-sub" x="830" y="384">Optional, off by default.</text>
+            <text class="d-box-sub" x="830" y="402">Gets the question you typed.</text>
 
             <defs>
               <marker id="cp-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
@@ -345,19 +447,21 @@
           <!-- Same picture, stacked, for narrow screens. A diagram that has to
                be scrolled sideways is a diagram whose point is off the edge of
                the phone, which defeats the whole section. -->
-          <svg class="diagram diagram-tall" viewBox="0 0 380 700" role="img" aria-labelledby="diagram-t-title diagram-t-desc">
+          <svg class="diagram diagram-tall" viewBox="0 0 380 760" role="img" aria-labelledby="diagram-t-title diagram-t-desc">
             <title id="diagram-t-title">Where CoursePilot's data goes, including the one path that leaves the browser</title>
             <desc id="diagram-t-desc">
               Inside a boundary labelled "the student's browser," three boxes stack top to bottom:
               the signed-in pages at learn.vcs.net, then CoursePilot finding assignments and dates,
               then the answer on the student's screen. Preferences are stored on the device. Two
-              paths leave the boundary at the bottom. The first is crossed out and leads to a box
-              reading "no CoursePilot server — there isn't one to contact." The second is dashed,
-              gated, and leads to "Google Gemini: optional, off by default," which receives only
-              the question the student typed, and only if the student has added their own API key.
+              paths reach the bottom edge of the boundary. The first is crossed out and leads to a
+              box reading "no CoursePilot server — there isn't one to contact"; coursework reaching
+              that edge stays inside. The second is drawn as a gate that is shut by default and
+              leads to "Google Gemini: optional, off by default." It carries only the question the
+              student typed, and only once the student has added their own API key.
             </desc>
 
             <rect class="d-boundary" x="8" y="30" width="364" height="486" rx="18"/>
+            <rect class="d-boundary-pulse" x="8" y="30" width="364" height="486" rx="18"/>
             <text class="d-boundary-label d-boundary-label-sm" x="26" y="54">The student's browser — one tab, one device</text>
 
             <rect class="d-box" x="26" y="72" width="328" height="86" rx="12"/>
@@ -369,6 +473,7 @@
             <text class="d-edge" x="202" y="177">reads</text>
 
             <rect class="d-box d-box-accent" x="26" y="190" width="328" height="104" rx="12"/>
+            <rect class="d-pulse d-pulse-t2" x="26" y="190" width="328" height="104" rx="12"/>
             <text class="d-box-title" x="44" y="218">CoursePilot</text>
             <text class="d-box-sub" x="44" y="240">Finds assignments, resolves dates,</text>
             <text class="d-box-sub" x="44" y="258">keeps the source sentence</text>
@@ -377,46 +482,56 @@
             <path class="d-arrow" d="M190 294 V 318" marker-end="url(#cp-arrow-t)"/>
             <text class="d-edge" x="202" y="313">shows</text>
 
-            <rect class="d-pulse d-pulse-t2" x="26" y="190" width="328" height="104" rx="12"/>
-
             <rect class="d-box" x="26" y="326" width="328" height="86" rx="12"/>
+            <rect class="d-pulse d-pulse-t3" x="26" y="326" width="328" height="86" rx="12"/>
             <text class="d-box-title" x="44" y="354">You</text>
             <text class="d-box-sub" x="44" y="376">The chat window, on your screen,</text>
             <text class="d-box-sub" x="44" y="394">and nowhere else</text>
-
-            <rect class="d-pulse d-pulse-t3" x="26" y="326" width="328" height="86" rx="12"/>
 
             <rect class="d-note" x="26" y="424" width="328" height="76" rx="12"/>
             <text class="d-note-title" x="44" y="450">Stored on this device only</text>
             <text class="d-box-sub" x="44" y="472">Theme, widget position, which day a class</text>
             <text class="d-box-sub" x="44" y="490">meets, and your API key if you added one.</text>
 
-            <!-- crossing 1: blocked, marked on the wall itself -->
-            <path class="d-arrow-dead" d="M108 500 V 556"/>
+            <!-- edge 1: no route out -->
+            <path class="d-arrow-dead" d="M108 500 V 560"/>
             <g class="d-block">
               <line x1="96" y1="502" x2="120" y2="530"/>
               <line x1="120" y1="502" x2="96" y2="530"/>
             </g>
 
-            <!-- crossing 2: optional — a gate in the wall, shut by default -->
-            <path class="d-arrow-optional" d="M272 500 V 556" marker-end="url(#cp-arrow-opt-t)"/>
-            <circle class="d-gate" cx="272" cy="516" r="9"/>
+            <!-- edge 2: the gate -->
+            <path class="d-arrow-optional" d="M272 500 V 560" marker-end="url(#cp-arrow-opt-t)"/>
+            <g class="d-gate-group">
+              <circle class="d-gate" cx="272" cy="516" r="11"/>
+              <line class="d-gate-bar d-gate-bar-top" x1="264" y1="516" x2="280" y2="516"/>
+            </g>
 
-            <rect class="d-box d-box-ghost" x="8" y="564" width="176" height="112" rx="12"/>
-            <text class="d-box-title d-ghost-text" x="26" y="592">No CoursePilot</text>
-            <text class="d-box-title d-ghost-text" x="26" y="612">server</text>
-            <text class="d-box-sub d-ghost-text" x="26" y="638">There isn't one</text>
-            <text class="d-box-sub d-ghost-text" x="26" y="656">to contact.</text>
+            <rect class="d-box d-box-ghost" x="8" y="572" width="176" height="112" rx="12"/>
+            <text class="d-box-title d-ghost-text" x="26" y="600">No CoursePilot</text>
+            <text class="d-box-title d-ghost-text" x="26" y="620">server</text>
+            <text class="d-box-sub d-ghost-text" x="26" y="646">There isn't one</text>
+            <text class="d-box-sub d-ghost-text" x="26" y="664">to contact.</text>
 
-            <rect class="d-box d-box-optional" x="196" y="564" width="176" height="112" rx="12"/>
-            <text class="d-box-title d-opt-title" x="214" y="592">Google Gemini</text>
-            <text class="d-box-sub" x="214" y="616">Optional, off by</text>
-            <text class="d-box-sub" x="214" y="634">default. Gets the</text>
-            <text class="d-box-sub" x="214" y="652">question you typed.</text>
+            <rect class="d-box d-box-optional" x="196" y="572" width="176" height="112" rx="12"/>
+            <text class="d-box-title d-opt-title" x="214" y="600">Google Gemini</text>
+            <text class="d-box-sub" x="214" y="624">Optional, off by</text>
+            <text class="d-box-sub" x="214" y="642">default. Gets the</text>
+            <text class="d-box-sub" x="214" y="660">question you typed.</text>
 
             <g class="d-flow d-flow-tall" aria-hidden="true">
-              <circle class="d-dot d-dot-read-t" cx="190" cy="160" r="5"/>
-              <circle class="d-dot d-dot-show-t" cx="190" cy="296" r="5"/>
+              <g class="d-token d-token-read-t" transform="translate(139 160)">
+                <rect class="d-token-box" x="0" y="-13" width="94" height="26" rx="13"/>
+                <text class="d-token-text" x="47" y="5" text-anchor="middle">your coursework</text>
+              </g>
+              <g class="d-token d-token-show-t" transform="translate(149 296)">
+                <rect class="d-token-box" x="0" y="-13" width="76" height="26" rx="13"/>
+                <text class="d-token-text" x="38" y="5" text-anchor="middle">what's due</text>
+              </g>
+              <g class="d-ripple d-ripple-t">
+                <circle class="d-ripple-ring d-ripple-1" cx="108" cy="516" r="13"/>
+                <circle class="d-ripple-ring d-ripple-2" cx="108" cy="516" r="13"/>
+              </g>
             </g>
 
             <defs>

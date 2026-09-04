@@ -1,12 +1,34 @@
 /**
  * main.js — the only script on the site.
  *
- * The theme toggle, the demo frame's self-heal, the scroll reveal, and the
- * pointer tilt on the browser mock. No dependencies, no network calls, nothing
- * stored except the visitor's own theme choice.
+ * The theme toggle, the demo frame's self-heal, the scroll reveal, the pointer
+ * tilt on the browser mock, the looping chat illustration, and the play/pause
+ * gate that keeps the chat and the data-flow diagram from animating while
+ * nobody is looking at them. No dependencies, no network calls, nothing stored
+ * except the visitor's own theme choice.
  */
 (function () {
   'use strict';
+
+  /* ======================================================================
+     ANIMATION TIMING — every number the scripted animations use.
+
+     Tune here rather than hunting through the code. The CSS animations have
+     their own matching block at the top of styles.css.
+
+     On CHAT: ANSWER_DELAY is how long a question sits alone before its answer
+     lands, and NEXT_DELAY is how long the finished exchange sits before the
+     next question pushes it up. Between them they decide whether a reader can
+     finish a line before it moves. If the loop feels rushed, raise NEXT_DELAY
+     first — the pause after an answer is what a reader actually uses.
+     ====================================================================== */
+  var CHAT = {
+    ANSWER_DELAY: 1200,   // ms from a question appearing to its answer
+    NEXT_DELAY: 1500,     // ms from an answer appearing to the next question
+    RESTART_DELAY: 2200,  // ms of stillness before the script starts over
+    MAX_BUBBLES: 4,       // bubbles kept on screen; a fifth pushes the top out
+    SHIFT_MS: 420         // must match --t-chat-shift in styles.css
+  };
 
   /* ---------------------------------------------------------------- theme */
 
@@ -186,6 +208,186 @@
     mock.addEventListener('focusout', unflatten);
   }
 
+  /* ----------------------------------------------------------------- chat */
+
+  /**
+   * The looping chat beside the four steps.
+   *
+   * SCRIPT is an illustration, not a recording. Every exchange here is
+   * something the extension answers today; the dates are all relative, and the
+   * course names generic, so this can never be mistaken for a feed of one
+   * student's real coursework. The live thing is the demo in the hero.
+   *
+   * DO NOT add an exchange showing a capability the extension does not have.
+   * The rest of this page spends its credibility on being accurate about what
+   * the thing does, and a mocked-up answer here would spend it all at once.
+   *
+   * The stack is bottom-anchored and clipped, so appending a bubble pushes the
+   * others up and the oldest out of view. Browsers do not animate that, so the
+   * survivors get a FLIP: measure before, measure after, translate them back
+   * to where they were, then release. Nothing but transform and opacity moves.
+   */
+  var SCRIPT = [
+    {
+      q: "what's due this week",
+      a: 'You have 6 assignments coming up:',
+      cards: [
+        { title: 'Unit 3 Problem Set', course: 'Precalculus', due: 'due Friday' },
+        { title: 'Lab writeup — density', course: 'Chemistry', due: 'due in 2 days' }
+      ]
+    },
+    {
+      q: 'anything overdue',
+      a: "Nothing is overdue. You're fully caught up."
+    },
+    {
+      q: 'what are we doing in chem tomorrow',
+      a: "Tomorrow's lesson plan for Chemistry says:",
+      cards: [
+        { title: '"Unit 2 review — stoichiometry practice, problems 1–14. Bring a calculator."',
+          course: 'Chemistry', due: 'lesson plan, tomorrow' }
+      ]
+    },
+    {
+      q: 'whats due next class for stats',
+      a: 'Statistics has one thing due next class:',
+      cards: [
+        { title: 'Chapter 4 reading + notes', course: 'Statistics', due: 'due in 2 days' }
+      ]
+    },
+    {
+      q: 'homework for calc',
+      a: 'Calculus has 2 things coming up:',
+      cards: [
+        { title: 'Section 3.4 problem set', course: 'Calculus', due: 'due tomorrow' },
+        { title: 'Unit 3 test', course: 'Calculus', due: 'due next week' }
+      ]
+    }
+  ];
+
+  var chatStack = document.getElementById('chat-stack');
+  var chatFigure = document.getElementById('chat-demo');
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function buildQuestion(step) {
+    var b = el('div', 'bubble bubble-q');
+    b.appendChild(el('p', null, step.q));
+    return b;
+  }
+
+  function buildAnswer(step) {
+    var b = el('div', 'bubble bubble-a');
+    b.appendChild(el('p', null, step.a));
+    (step.cards || []).forEach(function (card) {
+      var wrap = el('span', 'chat-card');
+      wrap.appendChild(el('span', 'chat-card-title', card.title));
+      var meta = el('span', 'chat-card-meta');
+      meta.appendChild(el('span', 'chat-card-course', card.course));
+      meta.appendChild(el('span', 'chat-card-due', card.due));
+      wrap.appendChild(meta);
+      b.appendChild(wrap);
+    });
+    return b;
+  }
+
+  /**
+   * Append a bubble and move everything else out of its way.
+   *
+   * FLIP: the browser has already done the layout by the time we read the new
+   * positions, so we put each survivor back where it was with a transform and
+   * then let a transition carry it to zero. The element being pushed out of
+   * view fades on the way.
+   */
+  function pushBubble(node) {
+    var existing = Array.prototype.slice.call(chatStack.children);
+    var before = existing.map(function (b) { return b.getBoundingClientRect().top; });
+
+    node.classList.add('is-entering');
+    chatStack.appendChild(node);
+
+    // Anything now beyond the keep-count is on its way out of the clip.
+    var kept = Array.prototype.slice.call(chatStack.children);
+    kept.slice(0, Math.max(0, kept.length - CHAT.MAX_BUBBLES)).forEach(function (b) {
+      b.classList.add('is-leaving');
+    });
+
+    existing.forEach(function (b, i) {
+      var delta = before[i] - b.getBoundingClientRect().top;
+      if (!delta) return;
+      b.style.transform = 'translateY(' + delta + 'px)';
+    });
+
+    // One forced reflow so the browser sees the start state before we release.
+    void chatStack.offsetHeight;
+
+    existing.forEach(function (b) {
+      if (!b.style.transform) return;
+      b.classList.add('is-shifting');
+      b.style.transform = '';
+    });
+    node.classList.add('is-settled');
+    node.classList.remove('is-entering');
+
+    window.setTimeout(function () {
+      existing.forEach(function (b) {
+        b.classList.remove('is-shifting');
+        b.style.transform = '';
+      });
+      // Drop anything that has finished leaving. It is already outside the
+      // clip, and the stack is bottom-anchored, so nothing visible moves.
+      Array.prototype.slice.call(chatStack.children).forEach(function (b) {
+        if (b.classList.contains('is-leaving')) chatStack.removeChild(b);
+      });
+    }, CHAT.SHIFT_MS + 40);
+  }
+
+  var chatTimer = null;
+  var chatStep = 0;
+  var chatPhase = 'question';
+  var chatRunning = false;
+
+  function chatTick() {
+    if (!chatRunning) return;
+    var step = SCRIPT[chatStep];
+
+    if (chatPhase === 'question') {
+      pushBubble(buildQuestion(step));
+      chatPhase = 'answer';
+      chatTimer = window.setTimeout(chatTick, CHAT.ANSWER_DELAY);
+      return;
+    }
+
+    pushBubble(buildAnswer(step));
+    chatPhase = 'question';
+    chatStep++;
+    var last = chatStep >= SCRIPT.length;
+    if (last) chatStep = 0;
+    chatTimer = window.setTimeout(chatTick, last ? CHAT.RESTART_DELAY : CHAT.NEXT_DELAY);
+  }
+
+  function chatStart() {
+    if (chatRunning || !chatStack) return;
+    chatRunning = true;
+    if (!chatStack.dataset.started) {
+      // Clear the static seed the markup ships with — it is what people see
+      // with JS off and under reduced motion, and it is in the way now.
+      chatStack.dataset.started = '1';
+      while (chatStack.firstChild) chatStack.removeChild(chatStack.firstChild);
+    }
+    chatTick();
+  }
+
+  function chatStop() {
+    chatRunning = false;
+    if (chatTimer !== null) { window.clearTimeout(chatTimer); chatTimer = null; }
+  }
+
   /* --------------------------------------------------------------- reveal */
 
   /**
@@ -268,4 +470,64 @@
     }, 2000);
     sweep();
   }
+
+  /* ------------------------------------------------- play only when seen */
+
+  /**
+   * Nothing loops off screen.
+   *
+   * The chat and the diagram both run indefinitely, so both are gated on
+   * being in the viewport — an IntersectionObserver starts and stops them, and
+   * the page being hidden altogether stops them too. Under reduced motion
+   * neither ever starts: the chat keeps the static exchange the markup ships
+   * with, and the diagram keeps its still drawing.
+   */
+  var loops = [];
+
+  if (chatFigure && chatStack) {
+    loops.push({ el: chatFigure, on: chatStart, off: chatStop });
+  }
+
+  var diagram = document.querySelector('.diagram-figure');
+  if (diagram) {
+    loops.push({
+      el: diagram,
+      on: function () { diagram.classList.add('is-playing'); },
+      off: function () { diagram.classList.remove('is-playing'); }
+    });
+  }
+
+  if (loops.length && !reduced) {
+    var visible = [];
+
+    var setPlaying = function (entry, on) {
+      if (on === (visible.indexOf(entry) !== -1)) return;
+      if (on) { visible.push(entry); entry.on(); }
+      else { visible.splice(visible.indexOf(entry), 1); entry.off(); }
+    };
+
+    if ('IntersectionObserver' in window) {
+      var loopIO = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          for (var i = 0; i < loops.length; i++) {
+            if (loops[i].el === e.target) setPlaying(loops[i], e.isIntersecting);
+          }
+        });
+      }, { rootMargin: '120px 0px' });
+      loops.forEach(function (l) { loopIO.observe(l.el); });
+    } else {
+      // No observer: run them. A page that cannot tell what is on screen is
+      // better off with the illustration working than with it dead.
+      loops.forEach(function (l) { setPlaying(l, true); });
+    }
+
+    // A hidden tab is off screen too, and timers there are throttled rather
+    // than stopped, so say so explicitly.
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) {
+        loops.forEach(function (l) { setPlaying(l, false); });
+      }
+    });
+  }
+
 })();

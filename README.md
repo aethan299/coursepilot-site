@@ -77,17 +77,64 @@ motion *is* the argument — a packet crosses to the extension, reaches the
 student, and then visibly stops at the boundary. Both exits stop: one at the
 wall, one at a gate that is shut until the student opens it.
 
+### Timing lives in two blocks, not scattered through the code
+
+Every duration is a named constant:
+
+- **`styles.css`** opens with a `:root` block of `--t-*` values. The diagram's
+  keyframes are percentages of `--t-diagram-cycle`, so changing that one value
+  retimes the whole sequence and keeps every part of it in step.
+- **`main.js`** opens with a `CHAT` object holding the chat loop's numbers.
+  `ANSWER_DELAY` is how long a question sits alone; `NEXT_DELAY` is how long a
+  finished exchange sits before the next question pushes it up. Between them
+  they decide whether a reader can finish a line before it moves. Raise
+  `NEXT_DELAY` first — the pause after an answer is the one a reader uses.
+
+`CHAT.SHIFT_MS` and `--t-chat-shift` describe the same transition and have to
+stay equal; the JS uses it to know when the shift has finished.
+
+### The chat script is an illustration, and has to stay one
+
+`SCRIPT` in `main.js` is scripted, not live. Two rules:
+
+1. **Never add an exchange showing something the extension cannot do.** The
+   rest of this page spends its credibility on being accurate about the
+   product; a mocked-up capability here would spend all of it at once.
+2. **Relative dates only** ("due Friday", "due in 2 days"), and generic course
+   names. A specific calendar date would read as somebody's live coursework.
+
+The stack is bottom-anchored inside a fixed-height clipped box, so appending a
+bubble pushes the rest up and the oldest out of view. Browsers do not animate
+that, so `pushBubble` does a FLIP: measure, append, translate the survivors
+back, release. Nothing but transform and opacity moves.
+
+### Both loops stop when nobody is watching
+
+The chat and the diagram are gated on an IntersectionObserver, and on the tab
+being visible. If the observer never fires, neither starts — and that failure
+mode is safe by design: the chat keeps the static exchange in the markup and
+the diagram keeps its still drawing, which is why the seed exchange is real
+markup rather than something JavaScript builds.
+
 Constraints that any new effect has to keep:
 
 - **`prefers-reduced-motion: reduce` disables all of it**, including the 3D
   transform and the diagram animation. The block at the bottom of `styles.css`
   is the single place that happens; add to it in the same commit.
 - **Transform and opacity only.** Nothing that animates layout, and no filters.
-- **Contrast is measured against the animated backdrop at its brightest point**,
-  not against the flat page colour. That is why `--accent-ink` is darker than
-  `--accent` in light mode and why the light backdrop fields are so faint: at
-  their old strength they pushed body copy under 4.5:1 where they overlapped.
-  Re-measure the worst-case overlap before raising any of those alphas.
+- **Contrast is measured against the backdrop at its worst point**, not against
+  the flat page colour: every radial field at full strength on the same pixel,
+  plus the grain at its darkest. That is why `--accent-ink` is darker than
+  `--accent` in light mode, and why the light `--field-*` alphas are so small.
+  Re-measure that overlap before raising any of them.
+- **On a light ground, brightness is free and tint is not.** `--field-lift` is
+  white in light mode and can be strong, because white behind dark text can
+  only raise contrast. `--field-1` and `--field-2` are tints and are capped.
+  If you want more depth in light mode, reach for the lift first.
+- The grain is an inline SVG `feTurbulence`, desaturated and capped at ~5.5%
+  alpha by a `feFuncA` slope. It is a data URI, so it costs no request. Raising
+  that slope changes the effective background under every paragraph on the
+  page — measure again if you touch it.
 - **Four requests, all local.** No fonts, no CDNs, no images.
 
 ## Running it locally

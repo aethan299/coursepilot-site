@@ -15,6 +15,28 @@
    ========================================================================== */
 
 :root {
+  /* ======================================================================
+     ANIMATION TIMING — every duration on the page, in one place.
+
+     Tune these rather than hunting through the file. The diagram's keyframes
+     are written as percentages of --t-diagram-cycle, so changing the cycle
+     retimes the whole sequence and keeps every part of it in step. The chat
+     loop's timings are the matching block at the top of main.js.
+     ====================================================================== */
+  --t-diagram-cycle: 11s;    /* one full pass of the data-flow story */
+  --t-boundary-pulse: 11s;   /* the wall answering; same cycle, own keyframes */
+  --t-hero-drift-a: 30s;     /* the three hero backdrop fields */
+  --t-hero-drift-b: 38s;
+  --t-hero-drift-c: 34s;
+  --t-who-drift: 42s;        /* the glow behind the who-built-it section */
+  --t-live-dot: 2.4s;        /* the "live demo" pulse */
+  --t-reveal: .5s;           /* scroll reveal fade+rise */
+  --t-lift: .35s;            /* card hover lift */
+  --t-sheen: .6s;            /* the sweep across the primary button */
+  --t-tilt: .55s;            /* browser mock settling to a new tilt */
+  --t-chat-enter: .42s;      /* a new bubble fading in */
+  --t-chat-shift: .42s;      /* the stack sliding up to make room */
+
   /* surfaces */
   --bg: #f6f8fb;
   --surface: #ffffff;
@@ -23,6 +45,24 @@
   --border-strong: #c3d0e2;
   --ui-edge: #6f8199;        /* boundaries that must clear 3:1 as UI */
   --mesh-line: rgba(22, 50, 92, .07);  /* decorative hero grid */
+  --motif-line: rgba(22, 50, 92, .07); /* the dashed-boundary echo */
+
+  /* Section depth. Alphas are capped so that even where two fields overlap,
+     body copy stays above 4.5:1 — see the note in the README before raising
+     any of them. On the navy sections the field is a white lift rather than a
+     tint, for the same reason the hero's brightest field is. */
+  --field-lift: rgba(255, 255, 255, .70);   /* the light source; white on a
+                                               light ground can only raise
+                                               contrast, so it can be strong */
+  --field-1: rgba(11, 142, 212, .055);      /* the cool tint; capped, because
+                                               a tint on a light ground can
+                                               only lower it */
+  --field-2: rgba(36, 80, 143, .04);
+  --field-navy: rgba(255, 255, 255, .10);
+
+  --token-fill: #16325c;      /* the labelled tokens in the diagram */
+  --token-fill-opt: #24508f;  /* the one that goes through the gate */
+  --chat-q-bg: #16325c;       /* the student's bubble in the illustration */
 
   /* ink */
   --text: #0f1a29;
@@ -58,6 +98,14 @@
     --border-strong: #3b4a5f;
     --ui-edge: #8697b0;
     --mesh-line: rgba(140, 190, 240, .07);
+    --motif-line: rgba(140, 190, 240, .085);
+    --field-lift: rgba(56, 189, 248, .068);
+    --field-1: rgba(56, 189, 248, .096);
+    --field-2: rgba(37, 83, 154, .176);
+    --field-navy: rgba(140, 200, 255, .10);
+    --token-fill: #2a6fc0;
+    --token-fill-opt: #2d74c6;
+    --chat-q-bg: #2a6fc0;   /* navy on a navy card would vanish here */
 
     --text: #e9f0f9;
     --muted: #a2b4ca;
@@ -84,6 +132,14 @@
   --border-strong: #3b4a5f;
   --ui-edge: #8697b0;
   --mesh-line: rgba(140, 190, 240, .07);
+  --motif-line: rgba(140, 190, 240, .085);
+  --field-lift: rgba(56, 189, 248, .068);
+  --field-1: rgba(56, 189, 248, .096);
+  --field-2: rgba(37, 83, 154, .176);
+  --field-navy: rgba(140, 200, 255, .10);
+  --token-fill: #2a6fc0;
+  --token-fill-opt: #2d74c6;
+  --chat-q-bg: #2a6fc0;   /* navy on a navy card would vanish here */
 
   --text: #e9f0f9;
   --muted: #a2b4ca;
@@ -428,7 +484,7 @@ code {
   margin-right: 8px;
   vertical-align: 1px;
   box-shadow: 0 0 0 0 rgba(11, 142, 212, .55);
-  animation: pulse 2.4s ease-out infinite;
+  animation: pulse var(--t-live-dot) ease-out infinite;
 }
 @keyframes pulse {
   0%   { box-shadow: 0 0 0 0 rgba(11, 142, 212, .5); }
@@ -552,6 +608,95 @@ code {
 .strip-more a:hover { color: #ffffff; text-decoration-color: #ffffff; }
 
 /* --------------------------------------------------------------------------
+   Section depth
+
+   Three cheap layers, none of which moves: a couple of soft radial fields so
+   the ground has a light source, a fine grain that does most of the work of
+   killing the "flat panel" feeling, and on the privacy section a dashed
+   rounded rectangle echoing the boundary from the diagram inside it.
+
+   All of it paints behind the content in the section's own stacking context,
+   so nothing here can ever sit on top of a paragraph. The field positions
+   change from section to section so scrolling reads as movement rather than
+   one long panel.
+   -------------------------------------------------------------------------- */
+
+.section, .strip, .site-footer { position: relative; isolation: isolate; }
+
+.section::before,
+.strip::before,
+.site-footer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--fields, none), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.055'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat, repeat;
+  background-size: auto, 160px 160px;
+}
+
+/* The hero already carries its own animated fields; it just wants the grain. */
+.hero-mesh {
+  background-image:
+    linear-gradient(to right, var(--mesh-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--mesh-line) 1px, transparent 1px),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3CfeComponentTransfer%3E%3CfeFuncA type='linear' slope='0.055'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+  background-size: 68px 68px, 68px 68px, 160px 160px;
+}
+
+#how {
+  --fields:
+    radial-gradient(880px 520px at 86% -16%, var(--field-lift), transparent 72%),
+    radial-gradient(700px 420px at 4% 110%, var(--field-1), transparent 72%);
+}
+#privacy {
+  --fields:
+    radial-gradient(900px 540px at 10% -18%, var(--field-lift), transparent 72%),
+    radial-gradient(760px 440px at 96% 100%, var(--field-2), transparent 74%);
+}
+#limits {
+  --fields:
+    radial-gradient(860px 500px at 96% -14%, var(--field-lift), transparent 72%),
+    radial-gradient(680px 400px at 2% 106%, var(--field-2), transparent 74%);
+}
+#who {
+  --fields:
+    radial-gradient(900px 520px at 8% -16%, var(--field-lift), transparent 72%),
+    radial-gradient(720px 420px at 96% 104%, var(--field-1), transparent 74%);
+}
+#get {
+  --fields:
+    radial-gradient(860px 500px at 90% -16%, var(--field-lift), transparent 72%),
+    radial-gradient(680px 400px at 6% 104%, var(--field-2), transparent 74%);
+}
+.strip {
+  --fields:
+    radial-gradient(820px 420px at 14% -20%, var(--field-navy), transparent 68%),
+    radial-gradient(640px 360px at 92% 120%, var(--field-navy), transparent 70%);
+}
+.site-footer {
+  --fields: radial-gradient(760px 300px at 50% -40%, var(--field-navy), transparent 70%);
+}
+
+/* The boundary motif, on the section that is about a boundary. Behind the
+   content, off the edges of the shell, and faint enough to read as texture
+   rather than a frame. */
+.section-motif::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 2%;
+  right: 2%;
+  top: 40px;
+  bottom: 40px;
+  border: 2px dashed var(--motif-line);
+  border-radius: 44px;
+  pointer-events: none;
+}
+@media (max-width: 700px) { .section-motif::after { left: -4%; right: -4%; } }
+
+/* --------------------------------------------------------------------------
    Sections
    -------------------------------------------------------------------------- */
 
@@ -665,7 +810,7 @@ code {
 .d-arrowhead-opt { fill: var(--accent-ink); }
 .d-edge-opt { fill: var(--accent-ink); }
 .d-gate {
-  fill: var(--surface);
+  fill: none;
   stroke: var(--accent-ink);
   stroke-width: 2.4;
 }
@@ -857,28 +1002,28 @@ code {
   /* A lift, not a tint: white can only raise the luminance behind dark
      text, so this field can never cost contrast. */
   background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, .92), rgba(255, 255, 255, 0) 66%);
-  animation: drift-a 30s ease-in-out infinite;
+  animation: drift-a var(--t-hero-drift-a) ease-in-out infinite;
 }
 .blob-b {
   width: 40vw; height: 40vw;
   min-width: 380px; min-height: 380px;
   right: -12%; top: -22%;
   background: radial-gradient(circle at 50% 50%, rgba(11, 142, 212, .09), rgba(11, 142, 212, 0) 66%);
-  animation: drift-b 38s ease-in-out infinite;
+  animation: drift-b var(--t-hero-drift-b) ease-in-out infinite;
 }
 .blob-c {
   width: 34vw; height: 34vw;
   min-width: 320px; min-height: 320px;
   left: 34%; bottom: -30%;
   background: radial-gradient(circle at 50% 50%, rgba(36, 80, 143, .06), rgba(36, 80, 143, 0) 70%);
-  animation: drift-c 34s ease-in-out infinite;
+  animation: drift-c var(--t-hero-drift-c) ease-in-out infinite;
 }
 .blob-d {
   width: 52vw; height: 52vw;
   min-width: 440px; min-height: 440px;
   right: -14%; top: -40%;
   background: radial-gradient(circle at 50% 50%, rgba(11, 142, 212, .10), rgba(11, 142, 212, 0) 68%);
-  animation: drift-b 42s ease-in-out infinite;
+  animation: drift-b var(--t-who-drift) ease-in-out infinite;
 }
 
 :root[data-theme="dark"] .blob-a,
@@ -912,10 +1057,6 @@ code {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  background-image:
-    linear-gradient(to right, var(--mesh-line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--mesh-line) 1px, transparent 1px);
-  background-size: 68px 68px;
   -webkit-mask-image: radial-gradient(ellipse 78% 62% at 28% 34%, #000 0%, transparent 72%);
   mask-image: radial-gradient(ellipse 78% 62% at 28% 34%, #000 0%, transparent 72%);
 }
@@ -971,7 +1112,7 @@ code {
   inset: 0;
   background: linear-gradient(105deg, transparent 34%, rgba(255, 255, 255, .22) 50%, transparent 66%);
   transform: translateX(-120%);
-  transition: transform .6s cubic-bezier(.2, .7, .3, 1);
+  transition: transform var(--t-sheen) cubic-bezier(.2, .7, .3, 1);
 }
 .button-primary:hover::after,
 .button-primary:focus-visible::after { transform: translateX(120%); }
@@ -990,7 +1131,7 @@ code {
     rotateY(var(--tilt-y, -6.5deg))
     translateZ(0);
   transform-origin: 50% 60%;
-  transition: transform .55s cubic-bezier(.2, .7, .3, 1), box-shadow .55s ease;
+  transition: transform var(--t-tilt) cubic-bezier(.2, .7, .3, 1), box-shadow var(--t-tilt) ease;
   will-change: transform;
 }
 
@@ -1039,7 +1180,7 @@ code {
   border-radius: var(--radius);
   background: var(--surface);
   box-shadow: var(--shadow-1);
-  transition: transform .35s cubic-bezier(.2, .7, .3, 1), box-shadow .35s ease, border-color .35s ease;
+  transition: transform var(--t-lift) cubic-bezier(.2, .7, .3, 1), box-shadow var(--t-lift) ease, border-color var(--t-lift) ease;
   will-change: transform;
 }
 .step:first-child { padding-top: 20px; }
@@ -1056,7 +1197,7 @@ code {
   top: 20px;
   background: linear-gradient(140deg, var(--brand-2), var(--brand));
   box-shadow: 0 4px 12px rgba(11, 111, 184, .32);
-  transition: transform .35s cubic-bezier(.2, .7, .3, 1);
+  transition: transform var(--t-lift) cubic-bezier(.2, .7, .3, 1);
 }
 .step:hover .step-num { transform: scale(1.14) rotate(-7deg); }
 
@@ -1067,6 +1208,138 @@ code {
   .steps::before { display: none; }
   .step { display: flex; gap: 16px; align-items: flex-start; }
   .step-num { position: static; }
+}
+
+/* ---- the chat illustration beside the steps ---------------------------- */
+
+.how-grid { display: grid; gap: 34px; grid-template-columns: 1fr; }
+
+/* Two columns only when there is room for both. Below this the chat goes
+   underneath rather than squeezing the steps into a ribbon. */
+@media (min-width: 900px) {
+  .how-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
+    gap: 44px;
+    align-items: start;
+  }
+}
+
+.chat { margin: 0; position: sticky; top: 96px; }
+@media (max-width: 899px) { .chat { position: static; } }
+
+.chat-caption {
+  display: block;
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.chat-caption-dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin-right: 7px;
+  vertical-align: 1px;
+}
+
+.chat-window {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.chat-window-bar {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 11px 16px;
+  background: var(--brand);
+  color: #ffffff;
+}
+.chat-window-title { font-size: 14.5px; font-weight: 700; }
+.chat-window-sub { font-size: 12px; color: #c5d6ef; }
+
+/* Bottom-anchored and clipped: appending a bubble pushes the stack up and the
+   oldest out of view, with no height, top or margin ever animating. main.js
+   translates the survivors into place. */
+.chat-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 9px;
+  height: 400px;
+  padding: 16px;
+  overflow: hidden;
+}
+@media (max-width: 899px) { .chat-stack { height: 340px; } }
+
+.bubble {
+  max-width: 86%;
+  padding: 9px 13px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  flex: 0 0 auto;
+  will-change: transform, opacity;
+}
+.bubble p { margin: 0; }
+
+.bubble-q {
+  align-self: flex-end;
+  background: var(--chat-q-bg);
+  color: #ffffff;
+  border-bottom-right-radius: 5px;
+}
+.bubble-a {
+  align-self: flex-start;
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 5px;
+}
+
+/* The card under an answer — the same shape the real widget uses, which is
+   the most convincing part of the illustration. */
+.chat-card {
+  display: block;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-ink);
+}
+.chat-card + .chat-card { margin-top: 6px; }
+.chat-card-title { display: block; font-size: 13px; font-weight: 700; color: var(--text); }
+.chat-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.chat-card-due { font-weight: 600; color: var(--accent-ink); }
+
+/* Entering and leaving. Both are transform + opacity, driven by classes that
+   main.js adds and removes. */
+.chat-stack .is-entering {
+  opacity: 0;
+  transform: translateY(10px) scale(.985);
+}
+.chat-stack .is-settled {
+  opacity: 1;
+  transform: none;
+  transition: opacity var(--t-chat-enter) ease, transform var(--t-chat-enter) cubic-bezier(.2, .7, .3, 1);
+}
+.chat-stack .is-shifting {
+  transition: transform var(--t-chat-shift) cubic-bezier(.2, .7, .3, 1);
+}
+.chat-stack .is-leaving {
+  opacity: 0;
+  transition: opacity var(--t-chat-shift) ease;
 }
 
 /* ---- who built it ------------------------------------------------------ */
@@ -1091,7 +1364,7 @@ code {
   border-left: 3px solid var(--accent-ink);
   background: var(--surface);
   box-shadow: var(--shadow-1);
-  transition: transform .35s cubic-bezier(.2, .7, .3, 1), box-shadow .35s ease;
+  transition: transform var(--t-lift) cubic-bezier(.2, .7, .3, 1), box-shadow var(--t-lift) ease;
   will-change: transform;
 }
 .knows li:hover {
@@ -1104,24 +1377,40 @@ code {
 /* ---- install cards lift, quietly --------------------------------------- */
 
 .install li {
-  transition: transform .35s cubic-bezier(.2, .7, .3, 1), box-shadow .35s ease;
+  transition: transform var(--t-lift) cubic-bezier(.2, .7, .3, 1), box-shadow var(--t-lift) ease;
 }
 .install li:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 
 /* ==========================================================================
    The data-flow animation
 
-   One 7s cycle, shared by every element: each keyframe set covers the whole
-   cycle and is simply invisible outside its own window, so nothing can drift
-   out of sync the way animation-delay does. A packet crosses to the
-   extension, the extension lights up, it crosses to the student — and then
-   the two attempts to leave arrive at the boundary and stop. That last beat
-   is the entire point of the section.
+   The still diagram already says what the parts are. What it cannot say is
+   that the boundary HOLDS, so that is the only thing this animation is for:
+   coursework moves through the tab, reaches the edge, and is kept in — the
+   wall answers, the rings break against it, and the coursework settles back
+   inside. The single path that does leave is drawn as a gate that stays shut
+   until a key appears, and what goes through it is labelled "your question",
+   never coursework, because the question is all that is ever sent.
 
-   Only transform and opacity move.
+   Every element runs on --t-diagram-cycle and covers the whole cycle in its
+   own keyframes, invisible outside its window, so nothing can drift the way
+   animation-delay does. Transform and opacity only. Paused unless the figure
+   is on screen (main.js adds .is-playing).
    ========================================================================== */
 
-.d-dot { fill: var(--accent); }
+.d-token-box {
+  fill: var(--token-fill);
+  stroke: none;
+}
+.d-token-text {
+  fill: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.d-token-box-opt { fill: var(--token-fill-opt); }
+.d-token-text-opt { fill: #ffffff; }
+
 .d-pulse {
   fill: none;
   stroke: var(--accent);
@@ -1129,42 +1418,118 @@ code {
   opacity: 0;
 }
 
-.d-dot, .d-pulse, .d-block, .d-gate { will-change: transform, opacity; }
-
-.diagram-wide .d-dot-read  { animation: dot-read 7s linear infinite; }
-.diagram-wide .d-dot-show  { animation: dot-show 7s linear infinite; }
-.diagram-wide .d-dot-block { animation: dot-block 7s linear infinite; }
-.diagram-wide .d-dot-gate  { animation: dot-gate 7s linear infinite; }
-.diagram-wide .d-pulse-2   { animation: pulse-2 7s linear infinite; }
-.diagram-wide .d-pulse-3   { animation: pulse-3 7s linear infinite; }
-.diagram-wide .d-block     { animation: impact-block 7s linear infinite; }
-.diagram-wide .d-gate      { animation: impact-gate 7s linear infinite; }
-
-/* Portrait has no clear corridor for a travelling exit dot — it would have to
-   cross the storage box — so there the wall marks carry the impact alone. */
-.diagram-tall .d-dot-read-t { animation: dot-read-t 7s linear infinite; }
-.diagram-tall .d-dot-show-t { animation: dot-show-t 7s linear infinite; }
-.diagram-tall .d-pulse-t2   { animation: pulse-2 7s linear infinite; }
-.diagram-tall .d-pulse-t3   { animation: pulse-3 7s linear infinite; }
-.diagram-tall .d-block      { animation: impact-block-t 7s linear infinite; }
-.diagram-tall .d-gate       { animation: impact-gate-t 7s linear infinite; }
-
-@keyframes dot-read {
-  0%, 2%    { opacity: 0; transform: translateX(0); }
-  4%        { opacity: 1; transform: translateX(2px); }
-  15%       { opacity: 1; transform: translateX(44px); }
-  17%, 100% { opacity: 0; transform: translateX(44px); }
+/* The wall's own response. Same geometry as the boundary, brighter, and only
+   visible for the beat where something is contained. */
+.d-boundary-pulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-dasharray: 8 7;
+  opacity: 0;
 }
-@keyframes dot-show {
-  0%, 23%   { opacity: 0; transform: translateX(0); }
-  25%       { opacity: 1; transform: translateX(2px); }
-  36%       { opacity: 1; transform: translateX(44px); }
-  38%, 100% { opacity: 0; transform: translateX(44px); }
+
+.d-ripple-ring {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 2.4;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* The gate: a plug in the wall with a bar across it. The bar swings open only
+   while the key is showing, which is the only time anything crosses. */
+.d-gate {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 2.4;
+}
+.d-gate-bar {
+  stroke: var(--accent-ink);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  transform-box: view-box;
+}
+/* Shut, the bar lies across the path; open, it swings to lie along it. The
+   two diagrams put the gate in different places, so the pivot is explicit. */
+.diagram-wide .d-gate-bar { transform-origin: 732px 372px; }
+.diagram-tall .d-gate-bar { transform-origin: 272px 516px; }
+.d-gate-key { opacity: 0; }
+.d-key-ring {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 2.2;
+}
+.d-key-stem {
+  stroke: var(--accent-ink);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+}
+
+.d-token, .d-pulse, .d-boundary-pulse, .d-ripple-ring,
+.d-block, .d-gate-bar, .d-gate-key {
+  will-change: transform, opacity;
+}
+
+/* Everything starts paused; main.js runs it only while the figure is on
+   screen, so a page nobody is looking at costs nothing. */
+.d-token, .d-pulse, .d-boundary-pulse, .d-ripple-ring,
+.d-block, .d-gate-bar, .d-gate-key {
+  animation-play-state: paused;
+}
+.diagram-figure.is-playing .d-token,
+.diagram-figure.is-playing .d-pulse,
+.diagram-figure.is-playing .d-boundary-pulse,
+.diagram-figure.is-playing .d-ripple-ring,
+.diagram-figure.is-playing .d-block,
+.diagram-figure.is-playing .d-gate-bar,
+.diagram-figure.is-playing .d-gate-key {
+  animation-play-state: running;
+}
+
+.diagram-wide .d-token-read  { animation: tok-read  var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-token-show  { animation: tok-show  var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-token-held  { animation: tok-held  var(--t-diagram-cycle) cubic-bezier(.25,.8,.4,1) infinite; }
+.diagram-wide .d-token-sent  { animation: tok-sent  var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-pulse-2     { animation: pulse-2   var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-pulse-3     { animation: pulse-3   var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-ripple-1    { animation: ripple-1  var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-ripple-2    { animation: ripple-2  var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-block       { animation: impact-block var(--t-diagram-cycle) linear infinite; }
+.d-boundary-pulse            { animation: wall-answers var(--t-boundary-pulse) linear infinite; }
+.diagram-wide .d-gate-bar    { animation: gate-bar  var(--t-diagram-cycle) linear infinite; }
+.diagram-wide .d-gate-key    { animation: gate-key  var(--t-diagram-cycle) linear infinite; }
+
+/* Portrait: the boxes span the full width, so a labelled token has nowhere to
+   travel on the two exits without crossing the storage box. It gets the two
+   inside hops, the wall's answer and the ripple; the gate stays drawn shut. */
+.diagram-tall .d-token-read-t { animation: tok-read-t var(--t-diagram-cycle) linear infinite; }
+.diagram-tall .d-token-show-t { animation: tok-show-t var(--t-diagram-cycle) linear infinite; }
+.diagram-tall .d-pulse-t2     { animation: pulse-2 var(--t-diagram-cycle) linear infinite; }
+.diagram-tall .d-pulse-t3     { animation: pulse-3 var(--t-diagram-cycle) linear infinite; }
+.diagram-tall .d-ripple-1     { animation: ripple-1 var(--t-diagram-cycle) linear infinite; }
+.diagram-tall .d-ripple-2     { animation: ripple-2 var(--t-diagram-cycle) linear infinite; }
+.diagram-tall .d-block        { animation: impact-block var(--t-diagram-cycle) linear infinite; }
+
+/* ---- phase 1: the page is read (0-14%) ---- */
+@keyframes tok-read {
+  0%, 2%    { opacity: 0; transform: translate(96px, 154px); }
+  3%        { opacity: 1; transform: translate(100px, 154px); }
+  14%       { opacity: 1; transform: translate(330px, 154px); }
+  15%, 100% { opacity: 0; transform: translate(334px, 154px); }
 }
 @keyframes pulse-2 {
   0%, 13%   { opacity: 0; }
   17%       { opacity: .95; }
   24%, 100% { opacity: 0; }
+}
+
+/* ---- phase 2: the answer is shown (22-36%) ---- */
+@keyframes tok-show {
+  0%, 21%   { opacity: 0; transform: translate(374px, 154px); }
+  22%       { opacity: 1; transform: translate(378px, 154px); }
+  34%       { opacity: 1; transform: translate(596px, 154px); }
+  35%, 100% { opacity: 0; transform: translate(600px, 154px); }
 }
 @keyframes pulse-3 {
   0%, 34%   { opacity: 0; }
@@ -1172,58 +1537,75 @@ code {
   45%, 100% { opacity: 0; }
 }
 
-/* The blocked crossing: out to the wall, a hard stop, a recoil, gone. */
-@keyframes dot-block {
-  0%, 49%   { opacity: 0; transform: translateX(0); }
-  51%       { opacity: 1; transform: translateX(2px); }
-  64%       { opacity: 1; transform: translateX(176px); }
-  66%       { transform: translateX(166px); }
-  68%       { transform: translateX(173px); }
-  70%       { opacity: 1; transform: translateX(169px); }
-  75%, 100% { opacity: 0; transform: translateX(169px); }
-}
-/* The optional crossing: same journey, stopped by a gate that is shut. */
-@keyframes dot-gate {
-  0%, 73%   { opacity: 0; transform: translateX(0); }
-  75%       { opacity: 1; transform: translateX(2px); }
-  88%       { opacity: 1; transform: translateX(168px); }
-  90%       { transform: translateX(160px); }
-  92%       { transform: translateX(166px); }
-  94%       { opacity: 1; transform: translateX(163px); }
-  98%, 100% { opacity: 0; transform: translateX(163px); }
+/* ---- phase 3: the coursework reaches the edge, and is kept in (44-62%) ----
+   It decelerates into the wall, is stopped short of it, recoils, and fades
+   back inside the boundary. It never crosses and never sits outside. */
+@keyframes tok-held {
+  0%, 44%   { opacity: 0; transform: translate(400px, 286px) scale(.92); }
+  47%       { opacity: 1; transform: translate(404px, 286px) scale(1); }
+  55%       { opacity: 1; transform: translate(616px, 286px) scale(1); }
+  57%       { opacity: 1; transform: translate(622px, 286px) scale(1); }
+  58.5%     { opacity: 1; transform: translate(606px, 286px) scale(.99); }
+  60%       { opacity: 1; transform: translate(613px, 286px) scale(1); }
+  62%       { opacity: 1; transform: translate(600px, 286px) scale(.98); }
+  68%, 100% { opacity: 0; transform: translate(560px, 286px) scale(.94); }
 }
 @keyframes impact-block {
-  0%, 63%   { transform: scale(1); }
-  65%       { transform: scale(1.22); }
-  70%, 100% { transform: scale(1); }
-}
-@keyframes impact-gate {
-  0%, 87%   { transform: scale(1); }
-  89%       { transform: scale(1.28); }
-  94%, 100% { transform: scale(1); }
-}
-
-@keyframes dot-read-t {
-  0%, 2%    { opacity: 0; transform: translateY(0); }
-  4%        { opacity: 1; transform: translateY(1px); }
-  15%       { opacity: 1; transform: translateY(24px); }
-  17%, 100% { opacity: 0; transform: translateY(24px); }
-}
-@keyframes dot-show-t {
-  0%, 23%   { opacity: 0; transform: translateY(0); }
-  25%       { opacity: 1; transform: translateY(1px); }
-  36%       { opacity: 1; transform: translateY(24px); }
-  38%, 100% { opacity: 0; transform: translateY(24px); }
-}
-@keyframes impact-block-t {
-  0%, 55%   { transform: scale(1); }
-  58%       { transform: scale(1.22); }
+  0%, 56%   { transform: scale(1); }
+  58%       { transform: scale(1.26); }
   64%, 100% { transform: scale(1); }
 }
-@keyframes impact-gate-t {
-  0%, 77%   { transform: scale(1); }
-  80%       { transform: scale(1.28); }
-  86%, 100% { transform: scale(1); }
+@keyframes ripple-1 {
+  0%, 56%   { opacity: 0; transform: scale(.5); }
+  58%       { opacity: .85; transform: scale(.7); }
+  68%, 100% { opacity: 0; transform: scale(2.1); }
+}
+@keyframes ripple-2 {
+  0%, 59%   { opacity: 0; transform: scale(.5); }
+  61%       { opacity: .55; transform: scale(.7); }
+  71%, 100% { opacity: 0; transform: scale(2.6); }
+}
+/* The wall answers where it held something. */
+@keyframes wall-answers {
+  0%, 56%   { opacity: 0; }
+  59%       { opacity: .75; }
+  70%, 100% { opacity: 0; }
+}
+
+/* ---- phase 4: a student opens the gate, and one question goes through
+   (74-96%). The key appears first and stays for the whole crossing, so the
+   crossing can only be read as something a person switched on. ---- */
+@keyframes gate-key {
+  0%, 73%   { opacity: 0; transform: translateY(-3px); }
+  77%       { opacity: 1; transform: translateY(0); }
+  93%       { opacity: 1; transform: translateY(0); }
+  96%, 100% { opacity: 0; transform: translateY(-3px); }
+}
+@keyframes gate-bar {
+  0%, 75%   { transform: rotate(0deg); opacity: 1; }
+  79%       { transform: rotate(84deg); opacity: .25; }
+  92%       { transform: rotate(84deg); opacity: .25; }
+  96%, 100% { transform: rotate(0deg); opacity: 1; }
+}
+@keyframes tok-sent {
+  0%, 79%   { opacity: 0; transform: translate(400px, 372px) scale(.92); }
+  82%       { opacity: 1; transform: translate(404px, 372px) scale(1); }
+  92%       { opacity: 1; transform: translate(790px, 372px) scale(1); }
+  95%, 100% { opacity: 0; transform: translate(800px, 372px) scale(.96); }
+}
+
+/* ---- portrait variants of the two inside hops ---- */
+@keyframes tok-read-t {
+  0%, 1%    { opacity: 0; transform: translate(139px, 160px) scale(.92); }
+  4%        { opacity: 1; transform: translate(139px, 163px) scale(1); }
+  12%       { opacity: 1; transform: translate(139px, 182px) scale(1); }
+  15%, 100% { opacity: 0; transform: translate(139px, 185px) scale(.96); }
+}
+@keyframes tok-show-t {
+  0%, 22%   { opacity: 0; transform: translate(149px, 296px) scale(.92); }
+  25%       { opacity: 1; transform: translate(149px, 299px) scale(1); }
+  33%       { opacity: 1; transform: translate(149px, 318px) scale(1); }
+  36%, 100% { opacity: 0; transform: translate(149px, 321px) scale(.96); }
 }
 
 /* Scaling an SVG shape needs its own box as the origin, or it flies off
@@ -1243,7 +1625,7 @@ code {
 .js .reveal {
   opacity: 0;
   transform: translateY(14px);
-  transition: opacity .5s ease, transform .5s cubic-bezier(.2, .7, .3, 1);
+  transition: opacity var(--t-reveal) ease, transform var(--t-reveal) cubic-bezier(.2, .7, .3, 1);
 }
 .js .reveal.is-visible { opacity: 1; transform: none; }
 
@@ -1277,7 +1659,16 @@ code {
   .button-primary::after { display: none; }
 
   /* The diagram animation is the one piece of motion that carries meaning, so
-     it is removed rather than frozen: the static drawing already says it. */
-  .d-dot, .d-pulse { display: none; }
-  .d-block, .d-gate { animation: none; transform: none; }
+     it is removed rather than frozen: the still drawing already says it, and a
+     frozen token stranded mid-flight would say something else. */
+  .d-token, .d-pulse, .d-boundary-pulse, .d-ripple-ring, .d-gate-key { display: none; }
+  .d-block, .d-gate, .d-gate-bar { animation: none; transform: none; }
+
+  /* The chat keeps the static exchange the markup ships with — main.js never
+     starts the loop under reduced motion, so these only cover a stack that was
+     already running when the preference changed. */
+  .chat-stack .is-entering,
+  .chat-stack .is-settled,
+  .chat-stack .is-shifting { opacity: 1; transform: none; }
+  .chat-stack .is-leaving { display: none; }
 }
