@@ -23,8 +23,12 @@
      retimes the whole sequence and keeps every part of it in step. The chat
      loop's timings are the matching block at the top of main.js.
      ====================================================================== */
-  --t-diagram-cycle: 11s;    /* one full pass of the data-flow story */
-  --t-boundary-pulse: 11s;   /* the wall answering; same cycle, own keyframes */
+  /* The diagram's own timings live in the DIAGRAM block at the top of main.js,
+     because that sequence is scheduled in script. These are the pieces of it
+     that CSS owns outright. */
+  --t-gate: .42s;            /* the gate barrier retracting */
+  --t-node-lift: .22s;       /* a node lifting under the pointer */
+  --t-node-dim: .25s;        /* the others fading back while it does */
   --t-hero-drift-a: 30s;     /* the three hero backdrop fields */
   --t-hero-drift-b: 38s;
   --t-hero-drift-c: 34s;
@@ -63,6 +67,19 @@
   --token-fill: #16325c;      /* the labelled tokens in the diagram */
   --token-fill-opt: #24508f;  /* the one that goes through the gate */
   --chat-q-bg: #16325c;       /* the student's bubble in the illustration */
+
+  /* Diagram surfaces. Node gradients stay light enough that --muted body text
+     on them keeps its ratio; the card is the one saturated thing, and it only
+     ever carries white bars, never text. */
+  --dg-node-top: #f7fafd;
+  --dg-node-bottom: #e7eef8;
+  --dg-node-lit: rgba(255, 255, 255, .9);
+  --dg-shadow-color: rgba(15, 26, 41, .16);
+  --dg-card-top: #2b5d9e;
+  --dg-card-bottom: #16325c;
+  --dg-card-opt-top: #3a72b8;
+  --dg-card-opt-bottom: #24508f;
+  --dg-card-edge: rgba(255, 255, 255, .22);
 
   /* ink */
   --text: #0f1a29;
@@ -106,6 +123,15 @@
     --token-fill: #2a6fc0;
     --token-fill-opt: #2d74c6;
     --chat-q-bg: #2a6fc0;   /* navy on a navy card would vanish here */
+    --dg-node-top: #222e42;
+    --dg-node-bottom: #182333;
+    --dg-node-lit: rgba(255, 255, 255, .10);
+    --dg-shadow-color: rgba(0, 0, 0, .55);
+    --dg-card-top: #3d84d4;
+    --dg-card-bottom: #2a6fc0;
+    --dg-card-opt-top: #4189d8;
+    --dg-card-opt-bottom: #2d74c6;
+    --dg-card-edge: rgba(255, 255, 255, .26);
 
     --text: #e9f0f9;
     --muted: #a2b4ca;
@@ -140,6 +166,15 @@
   --token-fill: #2a6fc0;
   --token-fill-opt: #2d74c6;
   --chat-q-bg: #2a6fc0;   /* navy on a navy card would vanish here */
+  --dg-node-top: #222e42;
+  --dg-node-bottom: #182333;
+  --dg-node-lit: rgba(255, 255, 255, .10);
+  --dg-shadow-color: rgba(0, 0, 0, .55);
+  --dg-card-top: #3d84d4;
+  --dg-card-bottom: #2a6fc0;
+  --dg-card-opt-top: #4189d8;
+  --dg-card-opt-bottom: #2d74c6;
+  --dg-card-edge: rgba(255, 255, 255, .26);
 
   --text: #e9f0f9;
   --muted: #a2b4ca;
@@ -763,66 +798,244 @@ code {
   text-align: center;
 }
 
-.d-boundary {
+/* ==========================================================================
+   The data-flow diagram
+
+   Everything here paints a still picture that is complete on its own: the
+   boundary, the nodes, the crossed-out edge, and a gate drawn closed. The
+   animation in main.js only ever adds to it, so with no JS, no motion
+   preference, or the section off screen, the diagram still says the whole
+   thing.
+
+   Depth is done with gradients, a 1px lit top edge, and one shared drop
+   shadow — cheap, static, and never in front of a label.
+   ========================================================================== */
+
+/* ---- the surface tokens the gradients pull from --------------------------
+   Declared as stops rather than fills so light and dark can swap them without
+   duplicating every rule. */
+.dg-stop-node-a { stop-color: var(--dg-node-top); }
+.dg-stop-node-b { stop-color: var(--dg-node-bottom); }
+.dg-stop-card-a { stop-color: var(--dg-card-top); }
+.dg-stop-card-b { stop-color: var(--dg-card-bottom); }
+.dg-stop-card-opt-a { stop-color: var(--dg-card-opt-top); }
+.dg-stop-card-opt-b { stop-color: var(--dg-card-opt-bottom); }
+.dg-stop-glow-a { stop-color: var(--accent); stop-opacity: .42; }
+.dg-stop-glow-b { stop-color: var(--accent); stop-opacity: 0; }
+.dg-shadow-drop { flood-color: var(--dg-shadow-color); flood-opacity: 1; }
+
+/* ---- boundary ---- */
+
+.dg-boundary {
   fill: none;
   stroke: var(--accent);
   stroke-width: 2;
   stroke-dasharray: 8 7;
 }
-.d-boundary-label {
+.dg-boundary-label {
   fill: var(--accent-ink);
   font-size: 14px;
   font-weight: 700;
   letter-spacing: .02em;
 }
-.d-box {
-  fill: var(--surface-2);
+.dg-boundary-label-sm { font-size: 12px; }
+
+/* A short bright segment riding the boundary path, so the wall reads as
+   active containment rather than a drawn line. offset-path keeps its speed
+   even around the corners. */
+.dg-shimmer rect { fill: var(--accent); opacity: .55; }
+.dg-shimmer,
+.dg-ripple {
+  offset-path: path("M30 44 H 714 A 18 18 0 0 1 732 62 V 416 A 18 18 0 0 1 714 434 H 30 A 18 18 0 0 1 12 416 V 62 A 18 18 0 0 1 30 44 Z");
+  offset-rotate: auto;
+  offset-distance: 0%;
+}
+.dg-ripple rect { fill: var(--accent); }
+.dg-ripple { opacity: 0; }
+
+/* ---- edges ---- */
+
+.dg-edge {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 2.2;
+  transition: opacity var(--t-node-dim) ease;
+}
+.dg-arrowhead { fill: var(--accent-ink); }
+.dg-arrowhead-opt { fill: var(--accent-ink); }
+.dg-edge-dead {
+  stroke: var(--ui-edge);
+  stroke-dasharray: 5 6;
+}
+.dg-edge-opt { stroke-dasharray: 7 6; }
+
+/* The stretch of the optional path beyond the gate is dim until a visitor
+   opens it, because nothing travels it until they do. */
+.dg-edge-beyond { opacity: .3; transition: opacity var(--t-gate) ease; }
+.diagram.is-gate-open .dg-edge-beyond { opacity: 1; }
+
+.dg-edge-label { fill: var(--muted); font-size: 12.5px; font-weight: 600; }
+.dg-edge-label-opt { fill: var(--accent-ink); }
+.dg-edge-label-dead { fill: var(--muted); }
+.dg-plate { fill: var(--surface); }
+
+/* ---- nodes ---- */
+
+.dg-nodes { }
+.dg-node { transition: transform var(--t-node-lift) cubic-bezier(.2,.7,.3,1), opacity var(--t-node-dim) ease; }
+.dg-node-plate {
+  fill: url(#dg-node-grad);
   stroke: var(--ui-edge);
   stroke-width: 1.5;
+  filter: url(#dg-shadow);
 }
-.d-box-accent { stroke: var(--accent); stroke-width: 2; }
-.d-boundary-label-sm { font-size: 12px; }
-.d-box-title { fill: var(--text); font-size: 16px; font-weight: 700; }
-.d-box-sub { fill: var(--muted); font-size: 13px; }
-.d-arrow { stroke: var(--accent-ink); stroke-width: 2.2; fill: none; }
-.d-arrowhead { fill: var(--accent-ink); }
-.d-edge { fill: var(--muted); font-size: 12.5px; font-weight: 600; }
-.d-note {
+.dg-node-lit { stroke: var(--dg-node-lit); stroke-width: 1; fill: none; }
+.dg-node-accent .dg-node-plate { stroke: var(--accent); stroke-width: 2; }
+.dg-node-title { fill: var(--text); font-size: 16px; font-weight: 700; }
+.dg-node-sub { fill: var(--muted); font-size: 13px; }
+.dg-note {
   fill: none;
   stroke: var(--ui-edge);
   stroke-width: 1.5;
   stroke-dasharray: 4 5;
 }
-.d-note-title { fill: var(--text); font-size: 14px; font-weight: 700; }
-.d-arrow-dead { stroke: var(--ui-edge); stroke-width: 2.2; stroke-dasharray: 5 6; fill: none; }
-.d-block line { stroke: var(--muted); stroke-width: 3; stroke-linecap: round; }
-.d-edge-dead { fill: var(--muted); }
-.d-label-plate { fill: var(--surface); }
+.dg-note-title { fill: var(--text); font-size: 14px; font-weight: 700; }
+.dg-ghost-plate { fill: none; stroke: var(--ui-edge); stroke-width: 1.5; stroke-dasharray: 5 6; }
+.dg-ghost-text { fill: var(--muted); }
+.dg-opt-plate { fill: none; stroke: var(--accent-ink); stroke-width: 1.8; stroke-dasharray: 6 5; }
+.dg-opt-title { fill: var(--accent-ink); }
 
-/* The one path that does leave the tab: drawn in the accent, dashed, and
-   gated, so it reads as a door rather than a pipe. */
-.d-arrow-optional {
-  stroke: var(--accent-ink);
-  stroke-width: 2.2;
-  stroke-dasharray: 7 6;
-  fill: none;
+/* Hover teaches the structure: the node lifts, its own connections stay
+   bright, and everything else steps back.
+   
+   What steps back is the SURFACES — plates, outlines, connector lines, the
+   cross mark — and never the text. Fading a whole node to 50% takes its body
+   copy from 5:1 down to 2:1, and a label losing contrast is not a trade worth
+   making for a hover effect. With the plates gone the structure reads just as
+   clearly, and the labels underneath stay exactly as readable as before. */
+@media (hover: hover) and (pointer: fine) {
+  .diagram.is-focusing .dg-node-plate,
+  .diagram.is-focusing .dg-node-lit,
+  .diagram.is-focusing .dg-note,
+  .diagram.is-focusing .dg-ghost-plate,
+  .diagram.is-focusing .dg-opt-plate { opacity: .28; }
+  .diagram.is-focusing .dg-edge,
+  .diagram.is-focusing .dg-block-mark { opacity: .3; }
+
+  .diagram.is-focusing .is-hot .dg-node-plate,
+  .diagram.is-focusing .is-hot .dg-node-lit,
+  .diagram.is-focusing .is-hot .dg-note,
+  .diagram.is-focusing .is-hot .dg-ghost-plate,
+  .diagram.is-focusing .is-hot .dg-opt-plate,
+  .diagram.is-focusing .dg-edge.is-hot { opacity: 1; }
+
+  .dg-node-plate, .dg-node-lit, .dg-note, .dg-ghost-plate,
+  .dg-opt-plate, .dg-block-mark { transition: opacity var(--t-node-dim) ease; }
+  .dg-node.is-hot { transform: translateY(-3px); }
 }
-.d-arrowhead-opt { fill: var(--accent-ink); }
-.d-edge-opt { fill: var(--accent-ink); }
-.d-gate {
+
+/* ---- the wall marks ---- */
+
+.dg-block-mark line {
+  stroke: var(--muted);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+.dg-block-flare {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 3;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.dg-impact-label { opacity: 0; }
+
+/* ---- the gate ------------------------------------------------------------
+   Closed on every page load, because the feature is off by default. Clicking
+   it is the honest way to show what the option does: the shutter retracts, the
+   padlock comes undone, and the stretch of path beyond it comes up to full
+   strength. Nothing about the extension changes — this is a demonstration. */
+
+.dg-gate { cursor: pointer; }
+.dg-gate-hit { fill: transparent; }
+
+.dg-gate-leaf {
+  fill: var(--accent-ink);
+  stroke: var(--surface);
+  stroke-width: 1.5;
+  transition: transform var(--t-gate) cubic-bezier(.3,.85,.3,1), opacity var(--t-gate) ease;
+}
+.dg-lock-body { fill: var(--accent-ink); }
+.dg-lock-shackle {
   fill: none;
   stroke: var(--accent-ink);
   stroke-width: 2.4;
+  transform-box: fill-box;
+  transform-origin: 88% 100%;
+  transition: transform var(--t-gate) cubic-bezier(.3,.85,.3,1);
 }
-.d-box-optional {
+.dg-gate-state {
+  fill: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  transition: fill var(--t-gate) ease;
+}
+
+.diagram.is-gate-open .dg-gate-leaf-top { transform: translateY(-22px); opacity: .3; }
+.diagram.is-gate-open .dg-gate-leaf-bottom { transform: translateY(22px); opacity: .3; }
+.diagram-tall.is-gate-open .dg-gate-leaf-top { transform: translateX(-22px); opacity: .3; }
+.diagram-tall.is-gate-open .dg-gate-leaf-bottom { transform: translateX(22px); opacity: .3; }
+.diagram.is-gate-open .dg-lock-shackle { transform: translate(5px, -5px) rotate(20deg); }
+.diagram.is-gate-open .dg-gate-state { fill: var(--accent-ink); }
+
+.dg-gate:focus { outline: none; }
+.dg-gate:focus-visible .dg-gate-hit {
   fill: none;
-  stroke: var(--accent-ink);
-  stroke-width: 1.8;
-  stroke-dasharray: 6 5;
+  stroke: var(--focus);
+  stroke-width: 3;
 }
-.d-opt-title { fill: var(--accent-ink); }
-.d-box-ghost { fill: none; stroke: var(--ui-edge); stroke-width: 1.5; stroke-dasharray: 5 6; }
-.d-ghost-text { fill: var(--muted); }
+
+/* ---- the travelling cards ---- */
+
+.dg-card-glow { fill: url(#dg-glow); }
+.dg-card-plate {
+  fill: url(#dg-card-grad);
+  stroke: var(--dg-card-edge);
+  stroke-width: 1;
+}
+.dg-card-opt .dg-card-plate { fill: url(#dg-card-grad-opt); }
+/* The 1px inner top edge. This one line is most of what makes the card read
+   as lit from above rather than as a flat rectangle. */
+.dg-card-lit { stroke: rgba(255, 255, 255, .40); stroke-width: 1; fill: none; }
+/* Bars stand in for lines of text, so there is no text inside the card and
+   therefore no way for a label to overflow it. */
+.dg-card-bar { fill: rgba(255, 255, 255, .78); }
+.dg-card-bar-dim { fill: rgba(255, 255, 255, .5); }
+/* The caption rides beneath the card and can be any length. */
+.dg-card-caption {
+  fill: var(--text);
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .01em;
+}
+.dg-ghost { opacity: 0; }
+.dg-particle { fill: var(--dg-card-bottom); }
+
+/* ---- parallax ----------------------------------------------------------
+   --dg-px/--dg-py are written by main.js, capped so the extremes are 8px.
+   Each layer scales them by its own depth, so the boundary drifts less than
+   the nodes and the picture gets a little dimension without ever becoming a
+   ride. */
+.dg-layer,
+.dg-flow {
+  transition: transform .22s ease-out;
+}
+.dg-layer[data-depth="0.35"] { transform: translate(calc(var(--dg-px, 0px) * .35), calc(var(--dg-py, 0px) * .35)); }
+.dg-layer[data-depth="0.75"],
+.dg-flow { transform: translate(calc(var(--dg-px, 0px) * .75), calc(var(--dg-py, 0px) * .75)); }
+.dg-layer[data-depth="1"] { transform: translate(var(--dg-px, 0px), var(--dg-py, 0px)); }
 
 /* ---- fact list ---- */
 
@@ -1381,240 +1594,6 @@ code {
 }
 .install li:hover { transform: translateY(-3px); box-shadow: var(--shadow-2); }
 
-/* ==========================================================================
-   The data-flow animation
-
-   The still diagram already says what the parts are. What it cannot say is
-   that the boundary HOLDS, so that is the only thing this animation is for:
-   coursework moves through the tab, reaches the edge, and is kept in — the
-   wall answers, the rings break against it, and the coursework settles back
-   inside. The single path that does leave is drawn as a gate that stays shut
-   until a key appears, and what goes through it is labelled "your question",
-   never coursework, because the question is all that is ever sent.
-
-   Every element runs on --t-diagram-cycle and covers the whole cycle in its
-   own keyframes, invisible outside its window, so nothing can drift the way
-   animation-delay does. Transform and opacity only. Paused unless the figure
-   is on screen (main.js adds .is-playing).
-   ========================================================================== */
-
-.d-token-box {
-  fill: var(--token-fill);
-  stroke: none;
-}
-.d-token-text {
-  fill: #ffffff;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: .01em;
-}
-.d-token-box-opt { fill: var(--token-fill-opt); }
-.d-token-text-opt { fill: #ffffff; }
-
-.d-pulse {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 2.4;
-  opacity: 0;
-}
-
-/* The wall's own response. Same geometry as the boundary, brighter, and only
-   visible for the beat where something is contained. */
-.d-boundary-pulse {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 3;
-  stroke-dasharray: 8 7;
-  opacity: 0;
-}
-
-.d-ripple-ring {
-  fill: none;
-  stroke: var(--accent-ink);
-  stroke-width: 2.4;
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
-/* The gate: a plug in the wall with a bar across it. The bar swings open only
-   while the key is showing, which is the only time anything crosses. */
-.d-gate {
-  fill: none;
-  stroke: var(--accent-ink);
-  stroke-width: 2.4;
-}
-.d-gate-bar {
-  stroke: var(--accent-ink);
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  transform-box: view-box;
-}
-/* Shut, the bar lies across the path; open, it swings to lie along it. The
-   two diagrams put the gate in different places, so the pivot is explicit. */
-.diagram-wide .d-gate-bar { transform-origin: 732px 372px; }
-.diagram-tall .d-gate-bar { transform-origin: 272px 516px; }
-.d-gate-key { opacity: 0; }
-.d-key-ring {
-  fill: none;
-  stroke: var(--accent-ink);
-  stroke-width: 2.2;
-}
-.d-key-stem {
-  stroke: var(--accent-ink);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-}
-
-.d-token, .d-pulse, .d-boundary-pulse, .d-ripple-ring,
-.d-block, .d-gate-bar, .d-gate-key {
-  will-change: transform, opacity;
-}
-
-/* Everything starts paused; main.js runs it only while the figure is on
-   screen, so a page nobody is looking at costs nothing. */
-.d-token, .d-pulse, .d-boundary-pulse, .d-ripple-ring,
-.d-block, .d-gate-bar, .d-gate-key {
-  animation-play-state: paused;
-}
-.diagram-figure.is-playing .d-token,
-.diagram-figure.is-playing .d-pulse,
-.diagram-figure.is-playing .d-boundary-pulse,
-.diagram-figure.is-playing .d-ripple-ring,
-.diagram-figure.is-playing .d-block,
-.diagram-figure.is-playing .d-gate-bar,
-.diagram-figure.is-playing .d-gate-key {
-  animation-play-state: running;
-}
-
-.diagram-wide .d-token-read  { animation: tok-read  var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-token-show  { animation: tok-show  var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-token-held  { animation: tok-held  var(--t-diagram-cycle) cubic-bezier(.25,.8,.4,1) infinite; }
-.diagram-wide .d-token-sent  { animation: tok-sent  var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-pulse-2     { animation: pulse-2   var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-pulse-3     { animation: pulse-3   var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-ripple-1    { animation: ripple-1  var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-ripple-2    { animation: ripple-2  var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-block       { animation: impact-block var(--t-diagram-cycle) linear infinite; }
-.d-boundary-pulse            { animation: wall-answers var(--t-boundary-pulse) linear infinite; }
-.diagram-wide .d-gate-bar    { animation: gate-bar  var(--t-diagram-cycle) linear infinite; }
-.diagram-wide .d-gate-key    { animation: gate-key  var(--t-diagram-cycle) linear infinite; }
-
-/* Portrait: the boxes span the full width, so a labelled token has nowhere to
-   travel on the two exits without crossing the storage box. It gets the two
-   inside hops, the wall's answer and the ripple; the gate stays drawn shut. */
-.diagram-tall .d-token-read-t { animation: tok-read-t var(--t-diagram-cycle) linear infinite; }
-.diagram-tall .d-token-show-t { animation: tok-show-t var(--t-diagram-cycle) linear infinite; }
-.diagram-tall .d-pulse-t2     { animation: pulse-2 var(--t-diagram-cycle) linear infinite; }
-.diagram-tall .d-pulse-t3     { animation: pulse-3 var(--t-diagram-cycle) linear infinite; }
-.diagram-tall .d-ripple-1     { animation: ripple-1 var(--t-diagram-cycle) linear infinite; }
-.diagram-tall .d-ripple-2     { animation: ripple-2 var(--t-diagram-cycle) linear infinite; }
-.diagram-tall .d-block        { animation: impact-block var(--t-diagram-cycle) linear infinite; }
-
-/* ---- phase 1: the page is read (0-14%) ---- */
-@keyframes tok-read {
-  0%, 2%    { opacity: 0; transform: translate(96px, 154px); }
-  3%        { opacity: 1; transform: translate(100px, 154px); }
-  14%       { opacity: 1; transform: translate(330px, 154px); }
-  15%, 100% { opacity: 0; transform: translate(334px, 154px); }
-}
-@keyframes pulse-2 {
-  0%, 13%   { opacity: 0; }
-  17%       { opacity: .95; }
-  24%, 100% { opacity: 0; }
-}
-
-/* ---- phase 2: the answer is shown (22-36%) ---- */
-@keyframes tok-show {
-  0%, 21%   { opacity: 0; transform: translate(374px, 154px); }
-  22%       { opacity: 1; transform: translate(378px, 154px); }
-  34%       { opacity: 1; transform: translate(596px, 154px); }
-  35%, 100% { opacity: 0; transform: translate(600px, 154px); }
-}
-@keyframes pulse-3 {
-  0%, 34%   { opacity: 0; }
-  38%       { opacity: .95; }
-  45%, 100% { opacity: 0; }
-}
-
-/* ---- phase 3: the coursework reaches the edge, and is kept in (44-62%) ----
-   It decelerates into the wall, is stopped short of it, recoils, and fades
-   back inside the boundary. It never crosses and never sits outside. */
-@keyframes tok-held {
-  0%, 44%   { opacity: 0; transform: translate(400px, 286px) scale(.92); }
-  47%       { opacity: 1; transform: translate(404px, 286px) scale(1); }
-  55%       { opacity: 1; transform: translate(616px, 286px) scale(1); }
-  57%       { opacity: 1; transform: translate(622px, 286px) scale(1); }
-  58.5%     { opacity: 1; transform: translate(606px, 286px) scale(.99); }
-  60%       { opacity: 1; transform: translate(613px, 286px) scale(1); }
-  62%       { opacity: 1; transform: translate(600px, 286px) scale(.98); }
-  68%, 100% { opacity: 0; transform: translate(560px, 286px) scale(.94); }
-}
-@keyframes impact-block {
-  0%, 56%   { transform: scale(1); }
-  58%       { transform: scale(1.26); }
-  64%, 100% { transform: scale(1); }
-}
-@keyframes ripple-1 {
-  0%, 56%   { opacity: 0; transform: scale(.5); }
-  58%       { opacity: .85; transform: scale(.7); }
-  68%, 100% { opacity: 0; transform: scale(2.1); }
-}
-@keyframes ripple-2 {
-  0%, 59%   { opacity: 0; transform: scale(.5); }
-  61%       { opacity: .55; transform: scale(.7); }
-  71%, 100% { opacity: 0; transform: scale(2.6); }
-}
-/* The wall answers where it held something. */
-@keyframes wall-answers {
-  0%, 56%   { opacity: 0; }
-  59%       { opacity: .75; }
-  70%, 100% { opacity: 0; }
-}
-
-/* ---- phase 4: a student opens the gate, and one question goes through
-   (74-96%). The key appears first and stays for the whole crossing, so the
-   crossing can only be read as something a person switched on. ---- */
-@keyframes gate-key {
-  0%, 73%   { opacity: 0; transform: translateY(-3px); }
-  77%       { opacity: 1; transform: translateY(0); }
-  93%       { opacity: 1; transform: translateY(0); }
-  96%, 100% { opacity: 0; transform: translateY(-3px); }
-}
-@keyframes gate-bar {
-  0%, 75%   { transform: rotate(0deg); opacity: 1; }
-  79%       { transform: rotate(84deg); opacity: .25; }
-  92%       { transform: rotate(84deg); opacity: .25; }
-  96%, 100% { transform: rotate(0deg); opacity: 1; }
-}
-@keyframes tok-sent {
-  0%, 79%   { opacity: 0; transform: translate(400px, 372px) scale(.92); }
-  82%       { opacity: 1; transform: translate(404px, 372px) scale(1); }
-  92%       { opacity: 1; transform: translate(790px, 372px) scale(1); }
-  95%, 100% { opacity: 0; transform: translate(800px, 372px) scale(.96); }
-}
-
-/* ---- portrait variants of the two inside hops ---- */
-@keyframes tok-read-t {
-  0%, 1%    { opacity: 0; transform: translate(139px, 160px) scale(.92); }
-  4%        { opacity: 1; transform: translate(139px, 163px) scale(1); }
-  12%       { opacity: 1; transform: translate(139px, 182px) scale(1); }
-  15%, 100% { opacity: 0; transform: translate(139px, 185px) scale(.96); }
-}
-@keyframes tok-show-t {
-  0%, 22%   { opacity: 0; transform: translate(149px, 296px) scale(.92); }
-  25%       { opacity: 1; transform: translate(149px, 299px) scale(1); }
-  33%       { opacity: 1; transform: translate(149px, 318px) scale(1); }
-  36%, 100% { opacity: 0; transform: translate(149px, 321px) scale(.96); }
-}
-
-/* Scaling an SVG shape needs its own box as the origin, or it flies off
-   toward the viewBox corner. */
-.d-block, .d-gate {
-  transform-box: fill-box;
-  transform-origin: center;
-}
-
 /* --------------------------------------------------------------------------
    Motion
 
@@ -1658,12 +1637,6 @@ code {
   .step:hover .step-num { transform: none; }
   .button-primary::after { display: none; }
 
-  /* The diagram animation is the one piece of motion that carries meaning, so
-     it is removed rather than frozen: the still drawing already says it, and a
-     frozen token stranded mid-flight would say something else. */
-  .d-token, .d-pulse, .d-boundary-pulse, .d-ripple-ring, .d-gate-key { display: none; }
-  .d-block, .d-gate, .d-gate-bar { animation: none; transform: none; }
-
   /* The chat keeps the static exchange the markup ships with — main.js never
      starts the loop under reduced motion, so these only cover a stack that was
      already running when the preference changed. */
@@ -1671,4 +1644,20 @@ code {
   .chat-stack .is-settled,
   .chat-stack .is-shifting { opacity: 1; transform: none; }
   .chat-stack .is-leaving { display: none; }
+
+  /* The diagram. main.js never builds a card, a particle or a parallax
+     listener under this preference, so what is left is the still drawing —
+     which is designed to carry the whole argument on its own: the boundary,
+     the crossed-out edge with its "no CoursePilot server" box, and the gate
+     drawn closed. These rules cover the parts that live in the markup. */
+  .dg-flow { display: none; }
+  .dg-shimmer, .dg-ripple, .dg-block-flare, .dg-impact-label { display: none; }
+  .dg-layer, .dg-flow {
+    --dg-px: 0px;
+    --dg-py: 0px;
+    transform: none !important;
+  }
+  .dg-node.is-hot { transform: none; }
+  /* The gate still opens and closes — that is a control, not an animation. It
+     simply snaps instead of sliding, which the rule at the top already does. */
 }

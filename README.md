@@ -73,9 +73,57 @@ as confidence; animating the trust section would read as a sales page. If you
 add flourish later, add it above the privacy section, not inside it.
 
 The one exception is the data-flow diagram, which is animated because the
-motion *is* the argument — a packet crosses to the extension, reaches the
-student, and then visibly stops at the boundary. Both exits stop: one at the
-wall, one at a gate that is shut until the student opens it.
+motion *is* the argument. See its own section below.
+
+## The data-flow diagram
+
+The still drawing carries the whole claim on its own — the boundary, the
+crossed-out edge with its "no CoursePilot server" box, and the gate drawn
+closed. Everything the script adds is on top of that, so with no JavaScript,
+`prefers-reduced-motion` set, or the section off screen, the diagram still
+says everything it needs to.
+
+### Rules that are not negotiable
+
+- **The gate is closed on every load.** The feature is off by default; the
+  diagram has to open closed or it is lying. `setGate(false)` runs
+  unconditionally at startup and nothing persists the state.
+- **Nothing captioned coursework ever crosses either edge.** The card that
+  runs at the wall is contained by it and fades back inside. The only thing
+  that ever crosses the gate is captioned "your question", because the typed
+  question is all that feature sends.
+- Sequence 2 is a statement about how far data can go, not a depiction of a
+  request being intercepted — there is no such request to depict. That is what
+  the "nothing to send to" label and the "no CoursePilot server" box are there
+  to say, and why removing either would change the meaning.
+
+### Two things that are easy to get wrong again
+
+1. **Never put a `<title>` element inside the SVG.** In SVG, `<title>` is a
+   native browser tooltip, not a heading: one on the root turns the entire
+   diagram into a hover target, and the tooltip then sits over the artwork
+   whenever a reader's pointer happens to rest there. The accessible name is
+   an `aria-label` on the `<svg>`; the long description is the
+   visually-hidden paragraph the figure points at with `aria-describedby`.
+2. **Cards move with `offset-path` / `offset-distance` on a real `<path>`,
+   never by animating x and y.** `offset-distance` is a fraction of arc
+   length, so speed stays even through the bends; animating coordinates makes
+   the card crawl on long segments and snap through short ones. Each route's
+   duration is also scaled by its own length against `DIAGRAM.REF_LEN`, so a
+   short hop and a long run move at the same speed.
+
+The travelling object is a stylised card with bars inside instead of text, and
+its label rides underneath as a caption. That is deliberate: with no text in
+the card there is no way for a label to overflow it, whatever the wording
+becomes.
+
+### The hover dim fades surfaces, not labels
+
+Hovering a node dims the others — but it dims their **plates, outlines and
+connector lines**, and leaves every text element at full strength. Fading a
+whole node group to 50% takes its body copy from about 5:1 down to 2:1, and a
+label losing contrast is not a trade worth making for a hover effect. With the
+plates gone the structure reads just as clearly.
 
 ### Timing lives in two blocks, not scattered through the code
 
